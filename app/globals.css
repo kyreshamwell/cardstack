@@ -1,0 +1,18 @@
+/*
+ * globals.css — the single CSS entrypoint for the app.
+ *
+ * Tailwind 4 uses a CSS-first approach: there is no tailwind.config.ts.
+ * Configuration (custom colors, fonts, etc.) lives here using @theme.
+ * For now we just import the default Tailwind utilities.
+ */
+
+@import "tailwindcss";
+
+@theme {
+  /* Design tokens — we'll expand these as the card UI takes shape. */
+  --color-brand: #0f172a;      /* slate-900 — main navy */
+  --color-brand-light: #1e293b; /* slate-800 — card backgrounds */
+  --color-accent: #6366f1;     /* indigo-500 — utilization highlights */
+  --color-danger: #ef4444;     /* red-500 — overdue, high utilization */
+  --color-success: #22c55e;    /* green-500 — paid, low utilization */
+}

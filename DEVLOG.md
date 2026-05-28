@@ -42,7 +42,47 @@ Running log of what was built, decided, and learned each session. Updated at the
 - [ ] Set up accounts: Clerk, Plaid (sandbox), Supabase
 - [x] Copy `.env.example` to `.env.local` and fill in Clerk keys
 - [x] Run `npm install` and `npm run dev` — verify the sign-in flow works end-to-end
-- [ ] Create the Supabase schema: `accounts` table (connected cards) and `users` table
-- [ ] Wire up Supabase client in `lib/supabase.ts`
+- [x] Create the Supabase schema: `connected_accounts` + `cards` tables with RLS
+- [x] Wire up Supabase client in `lib/supabase.ts`
+
+---
+
+## Session 2 — 2026-05-28
+
+### What was built
+
+- Plaid integration end-to-end:
+  - `lib/plaid.ts` — Plaid API client (sandbox → dev → prod via single env var)
+  - `/api/plaid/create-link-token` — server creates a link token, never exposing credentials to browser
+  - `/api/plaid/exchange-token` — swaps public token for access token, saves connection + cards to Supabase
+  - `/api/plaid/sync` — re-fetches balances on demand (to be hooked up to a cron later)
+- `components/cards/ConnectCardButton.tsx` — client component that opens Plaid Link and handles the full OAuth-style flow
+- Dashboard (`app/(dashboard)/dashboard/page.tsx`) — server component that reads cards from Supabase and renders balance, available credit, limit, and a color-coded utilization bar per card
+- Fixed routing: moved dashboard page from `(dashboard)/page.tsx` to `(dashboard)/dashboard/page.tsx` so it correctly resolves to `/dashboard`
+
+### Decisions made
+
+| Decision | Reason |
+|---|---|
+| `Products.Auth` instead of `Products.Liabilities` | Liabilities product blocks non-supporting sandbox institutions; Auth is universal. Liabilities added back in Phase 2 for due dates/minimum payments |
+| Credit-only filter in exchange-token | Only save `type === 'credit'` accounts — skip checking/savings. Works correctly with real banks in dev/prod |
+| Service role key for all server writes | Simpler for MVP; RLS policies still in place for any future client-side access |
+| Server component dashboard | Data fetching stays server-side; Supabase never called from the browser |
+
+### What I learned
+
+- Route groups `(name)` don't add URL segments — `(dashboard)/page.tsx` resolves to `/`, not `/dashboard`
+- Plaid's public token is single-use and short-lived — must be exchanged server-side immediately for a permanent access token
+- The access token must never leave the server — stored encrypted in Supabase, only read in API routes
+- `window.location.reload()` on a Next.js server component page triggers a full re-render and re-fetch from Supabase
+- Plaid sandbox test institutions mostly return depository accounts — credit card accounts require specific institutions or dev mode with real banks
+
+### Next session
+
+- [ ] Add a manual refresh button that calls `/api/plaid/sync`
+- [ ] Due dates — decide: Plaid Liabilities product or manual input field?
+- [ ] Quick pay links per card
+- [ ] UI polish — card icons per institution, better empty state
+- [ ] First commit and push to GitHub
 
 ---

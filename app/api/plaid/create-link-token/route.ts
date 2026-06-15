@@ -22,23 +22,34 @@ export async function POST() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const isProduction = process.env.PLAID_ENV === 'production'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const isHttps = appUrl.startsWith('https://')
 
-  const response = await plaidClient.linkTokenCreate({
-    user: {
-      client_user_id: userId,
-    },
-    client_name: 'Cardstack',
-    products: [Products.Auth],
-    optional_products: [Products.Liabilities],
-    country_codes: [CountryCode.Us],
-    language: 'en',
-    // redirect_uri is required in production for OAuth institutions (Chase, BofA, etc.)
-    // Must exactly match a URI registered in your Plaid dashboard
-    ...(isProduction && {
-      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
-    }),
-  })
+  try {
+    const response = await plaidClient.linkTokenCreate({
+      user: {
+        client_user_id: userId,
+      },
+      client_name: 'Cardstack',
+      products: [Products.Liabilities],
+      country_codes: [CountryCode.Us],
+      language: 'en',
+      // Only send redirect_uri when running over HTTPS (Vercel).
+      // Plaid production rejects http:// — omitting it works fine for localhost.
+      ...(isHttps && {
+        redirect_uri: `${appUrl}/dashboard`,
+      }),
+    })
 
-  return Response.json({ link_token: response.data.link_token })
+    return Response.json({ link_token: response.data.link_token })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    // Log the full Plaid error response so we can see the exact reason
+    if (err && typeof err === 'object' && 'response' in err) {
+      const axiosErr = err as { response: { data: unknown } }
+      console.error('Plaid error details:', JSON.stringify(axiosErr.response.data, null, 2))
+    }
+    console.error('Plaid link token error:', err)
+    return Response.json({ error: message }, { status: 500 })
+  }
 }

@@ -22,17 +22,22 @@ export async function POST() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const isProduction = process.env.PLAID_ENV === 'production'
+
   const response = await plaidClient.linkTokenCreate({
     user: {
-      client_user_id: userId, // ties this link session to your Clerk user
+      client_user_id: userId,
     },
     client_name: 'Cardstack',
     products: [Products.Auth],
-    // Liabilities as optional — requested if the institution supports it, won't block if not.
-    // Gives us: due date, minimum payment, last payment, is_overdue.
     optional_products: [Products.Liabilities],
     country_codes: [CountryCode.Us],
     language: 'en',
+    // redirect_uri is required in production for OAuth institutions (Chase, BofA, etc.)
+    // Must exactly match a URI registered in your Plaid dashboard
+    ...(isProduction && {
+      redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+    }),
   })
 
   return Response.json({ link_token: response.data.link_token })

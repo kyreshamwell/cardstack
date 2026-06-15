@@ -16,3 +16,13 @@
   --color-danger: #ef4444;     /* red-500 — overdue, high utilization */
   --color-success: #22c55e;    /* green-500 — paid, low utilization */
 }
+
+/* Privacy mode — blurs any element marked sensitive-value */
+.privacy-mode .sensitive-value {
+  filter: blur(8px);
+  user-select: none;
+  transition: filter 0.2s ease;
+}
+.sensitive-value {
+  transition: filter 0.2s ease;
+}

@@ -22,18 +22,34 @@ export async function POST() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const response = await plaidClient.linkTokenCreate({
-    user: {
-      client_user_id: userId, // ties this link session to your Clerk user
-    },
-    client_name: 'Cardstack',
-    products: [Products.Auth],
-    // Liabilities as optional — requested if the institution supports it, won't block if not.
-    // Gives us: due date, minimum payment, last payment, is_overdue.
-    optional_products: [Products.Liabilities],
-    country_codes: [CountryCode.Us],
-    language: 'en',
-  })
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const isHttps = appUrl.startsWith('https://')
 
-  return Response.json({ link_token: response.data.link_token })
+  try {
+    const response = await plaidClient.linkTokenCreate({
+      user: {
+        client_user_id: userId,
+      },
+      client_name: 'Cardstack',
+      products: [Products.Liabilities],
+      country_codes: [CountryCode.Us],
+      language: 'en',
+      // Only send redirect_uri when running over HTTPS (Vercel).
+      // Plaid production rejects http:// — omitting it works fine for localhost.
+      ...(isHttps && {
+        redirect_uri: `${appUrl}/dashboard`,
+      }),
+    })
+
+    return Response.json({ link_token: response.data.link_token })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err)
+    // Log the full Plaid error response so we can see the exact reason
+    if (err && typeof err === 'object' && 'response' in err) {
+      const axiosErr = err as { response: { data: unknown } }
+      console.error('Plaid error details:', JSON.stringify(axiosErr.response.data, null, 2))
+    }
+    console.error('Plaid link token error:', err)
+    return Response.json({ error: message }, { status: 500 })
+  }
 }

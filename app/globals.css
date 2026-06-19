@@ -8,6 +8,9 @@
 
 @import "tailwindcss";
 
+/* Class-based dark mode — toggle adds/removes .dark on <html> */
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Design tokens — we'll expand these as the card UI takes shape. */
   --color-brand: #0f172a;      /* slate-900 — main navy */
@@ -15,6 +18,16 @@
   --color-accent: #6366f1;     /* indigo-500 — utilization highlights */
   --color-danger: #ef4444;     /* red-500 — overdue, high utilization */
   --color-success: #22c55e;    /* green-500 — paid, low utilization */
+}
+
+/* NavUserButton — Clerk trigger is invisible but covers the pill for clicks */
+.nav-user-pill .cl-userButtonTrigger {
+  position: absolute !important;
+  inset: 0 !important;
+  opacity: 0 !important;
+  border-radius: 9999px;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Privacy mode — blurs any element marked sensitive-value */

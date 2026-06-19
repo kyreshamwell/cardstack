@@ -33,18 +33,12 @@ export default function Home() {
         <p className="mt-6 text-lg text-slate-400 max-w-xl mx-auto leading-relaxed">
           Track balances, utilization, and due dates across every card — in one clean dashboard. Connect via Plaid or add manually.
         </p>
-        <div className="mt-10 flex items-center justify-center gap-4">
+        <div className="mt-10 flex justify-center">
           <Link
-            href="/demo"
-            className="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-colors"
+            href="/sign-up"
+            className="rounded-xl bg-white px-8 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition-colors"
           >
-            View demo
-          </Link>
-          <Link
-            href="/sign-in"
-            className="rounded-xl border border-white/20 px-6 py-3 text-sm font-semibold text-white hover:bg-white/5 transition-colors"
-          >
-            Sign in →
+            Get started
           </Link>
         </div>
       </div>

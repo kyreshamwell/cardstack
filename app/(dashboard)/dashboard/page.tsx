@@ -1,8 +1,3 @@
-// app/(dashboard)/dashboard/page.tsx
-//
-// Server Component — runs on the server, reads from Supabase directly.
-// No sensitive data ever touches the browser.
-
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ConnectCardButton } from '@/components/cards/ConnectCardButton'
@@ -14,6 +9,16 @@ import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
 import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
 import { PrivacyToggle } from '@/components/cards/PrivacyToggle'
+import { DonutChart, type ChartSlice } from '@/components/cards/DonutChart'
+
+const CARD_COLORS = [
+  '#6366f1',
+  '#8b5cf6',
+  '#06b6d4',
+  '#10b981',
+  '#f59e0b',
+  '#ef4444',
+]
 
 export default async function DashboardPage() {
   const { userId } = await auth()
@@ -24,13 +29,12 @@ export default async function DashboardPage() {
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
 
-  // ── Summary calculations across all cards ──────────────────────────────────
   const allCards = cards ?? []
-  const cardsWithLimit = allCards.filter(
-    (c) => c.balance_current != null && c.balance_limit != null
-  )
-  const totalBalance = allCards.reduce((sum, c) => sum + (c.balance_current ?? 0), 0)
-  const totalLimit = cardsWithLimit.reduce((sum, c) => sum + (c.balance_limit ?? 0), 0)
+
+  const totalBalance = allCards.reduce((s, c) => s + (c.balance_current ?? 0), 0)
+  const totalLimit = allCards
+    .filter((c) => c.balance_limit != null)
+    .reduce((s, c) => s + (c.balance_limit ?? 0), 0)
   const overallUtilization =
     totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : null
   const overdueCount = allCards.filter((c) => {
@@ -42,11 +46,25 @@ export default async function DashboardPage() {
     return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'due-soon'
   }).length
 
+  const chartSlices: ChartSlice[] = allCards
+    .filter((c) => c.balance_current != null && c.balance_current > 0)
+    .map((c, i) => ({
+      id: c.id,
+      name: c.name,
+      balance: c.balance_current,
+      color: CARD_COLORS[i % CARD_COLORS.length],
+    }))
+
+  const colorById: Record<string, string> = {}
+  allCards.forEach((c, i) => {
+    colorById[c.id] = CARD_COLORS[i % CARD_COLORS.length]
+  })
+
   return (
     <div>
-      {/* ── Page header ── */}
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900">Your Cards</h1>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Your Cards</h1>
         <div className="flex items-center gap-2">
           <PrivacyToggle />
           <RefreshButton />
@@ -55,251 +73,255 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Summary bar ── */}
-      {allCards.length > 0 && (
-        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Total balance
-            </p>
-            <p className="sensitive-value mt-1 text-xl font-bold text-slate-900">
-              {formatCurrency(totalBalance)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Total limit
-            </p>
-            <p className="sensitive-value mt-1 text-xl font-bold text-slate-900">
-              {totalLimit > 0 ? formatCurrency(totalLimit) : '—'}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Overall utilization
-            </p>
-            <p
-              className={`sensitive-value mt-1 text-xl font-bold ${
-                overallUtilization == null
-                  ? 'text-slate-900'
-                  : overallUtilization >= 30
-                  ? 'text-red-600'
-                  : 'text-emerald-600'
-              }`}
-            >
-              {overallUtilization != null ? `${overallUtilization}%` : '—'}
-            </p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-              Alerts
-            </p>
-            <p className="mt-1 text-xl font-bold text-slate-900">
-              {overdueCount > 0 ? (
-                <span className="text-red-600">{overdueCount} overdue</span>
-              ) : dueSoonCount > 0 ? (
-                <span className="text-yellow-600">{dueSoonCount} due soon</span>
-              ) : (
-                <span className="text-emerald-600">All clear</span>
-              )}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ── Cards grid ── */}
       {allCards.length === 0 ? (
-        <div className="mt-12 text-center">
-          <p className="text-slate-500">No cards connected yet.</p>
-          <p className="mt-1 text-sm text-slate-400">
+        <div className="mt-16 text-center">
+          <p className="text-slate-500 dark:text-slate-400">No cards connected yet.</p>
+          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
             Connect a card via Plaid or add one manually.
           </p>
         </div>
       ) : (
-        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {allCards.map((card) => {
-            const hasUtilizationData = card.balance_current != null && card.balance_limit != null
-            const utilization = hasUtilizationData
-              ? calcUtilization(card.balance_current, card.balance_limit)
-              : null
+        <div className="mt-6 flex gap-6 items-start">
 
-            const availableCredit = card.balance_available ??
-              (card.balance_limit != null && card.balance_current != null
-                ? card.balance_limit - card.balance_current
-                : null)
+          {/* ── Left panel ── */}
+          <div className="hidden lg:flex flex-col gap-4 w-64 flex-shrink-0">
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
+                Balance breakdown
+              </p>
+              {totalBalance > 0 ? (
+                <DonutChart slices={chartSlices} totalBalance={totalBalance} />
+              ) : (
+                <p className="text-sm text-slate-400 text-center py-8">No balance data yet</p>
+              )}
+            </div>
 
-            const dueDate = card.due_date
-              ? new Date(`${card.due_date}T12:00:00`)
-              : null
-            const dueDateStatus = dueDate ? getDueDateStatus(dueDate) : null
-
-            const institution = card.connected_accounts as {
-              institution_name: string
-              institution_id: string
-            } | null
-
-            // Manual cards store institution_name directly on the card row
-            const institutionName =
-              institution?.institution_name ?? card.institution_name ?? 'Credit Card'
-
-            const payUrl = institution
-              ? getPaymentUrl(institution.institution_id, institution.institution_name)
-              : null
-
-            const isManual = card.source === 'manual'
-
-            const dueDateColors = {
-              overdue: { badge: 'bg-red-500/20 text-red-300 border-red-500/30' },
-              'due-soon': { badge: 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30' },
-              upcoming: { badge: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30' },
-            }
-
-            const dueDateLabels = {
-              overdue: 'Overdue',
-              'due-soon': 'Due soon',
-              upcoming: dueDate
-                ? dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                : 'Upcoming',
-            }
-
-            return (
-              <div
-                key={card.id}
-                className="rounded-2xl overflow-hidden shadow-md border border-slate-200/60"
-              >
-                {/* ── Dark card header ── */}
-                <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 px-5 pt-5 pb-6">
-                  {/* Top row: institution + actions */}
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
-                        {institutionName}
-                      </p>
-                      <p className="mt-0.5 text-base font-semibold text-white leading-tight">
-                        {card.name}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {/* Edit pencil — only on manual cards */}
-                      {isManual && (
-                        <EditManualCardButton
-                          cardId={card.id}
-                          cardName={card.name}
-                          currentBalance={card.balance_current}
-                          currentLimit={card.balance_limit}
-                          currentDueDate={card.due_date}
-                          currentMinPayment={card.minimum_payment}
-                        />
-                      )}
-                      <RemoveCardButton cardId={card.id} cardName={card.name} />
-                    </div>
-                  </div>
-
-                  {/* Balance */}
-                  <div className="mt-5">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">
-                      Current balance
-                    </p>
-                    <p className="sensitive-value mt-1 text-3xl font-bold text-white tabular-nums">
-                      {card.balance_current != null
-                        ? formatCurrency(card.balance_current)
-                        : '—'}
-                    </p>
-                  </div>
-
-                  {/* Card mask + due date badge */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <p className="font-mono text-sm tracking-widest text-slate-400">
-                      {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
-                    </p>
-                    {dueDate && dueDateStatus && (
-                      <span
-                        className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dueDateColors[dueDateStatus].badge}`}
-                      >
-                        {dueDateStatus === 'upcoming'
-                          ? `Due ${dueDateLabels[dueDateStatus]}`
-                          : dueDateLabels[dueDateStatus]}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Utilization bar */}
-                  {utilization != null && (
-                    <div className="mt-4 h-1 w-full rounded-full bg-white/10">
-                      <div
-                        className={`h-1 rounded-full transition-all ${
-                          utilization >= 70
-                            ? 'bg-red-400'
-                            : utilization >= 30
-                            ? 'bg-yellow-400'
-                            : 'bg-emerald-400'
-                        }`}
-                        style={{ width: `${Math.min(utilization, 100)}%` }}
-                      />
-                    </div>
-                  )}
+            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
+                Overview
+              </p>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Total balance</span>
+                  <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {formatCurrency(totalBalance)}
+                  </span>
                 </div>
-
-                {/* ── White stat section ── */}
-                <div className="bg-white px-5 py-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Available</span>
-                    <span className="sensitive-value text-sm font-semibold text-slate-900">
-                      {availableCredit != null ? formatCurrency(availableCredit) : '—'}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-slate-500">Credit limit</span>
-                    {card.balance_limit != null ? (
-                      <span className="sensitive-value text-sm font-semibold text-slate-900">
-                        {formatCurrency(card.balance_limit)}
-                      </span>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Total limit</span>
+                  <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {totalLimit > 0 ? formatCurrency(totalLimit) : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Utilization</span>
+                  <span className={`sensitive-value text-sm font-semibold ${
+                    overallUtilization == null ? 'text-slate-900 dark:text-slate-100'
+                    : overallUtilization >= 30 ? 'text-yellow-600'
+                    : 'text-emerald-600'
+                  }`}>
+                    {overallUtilization != null ? `${overallUtilization}%` : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Alerts</span>
+                  <span className="text-sm font-semibold">
+                    {overdueCount > 0 ? (
+                      <span className="text-red-500">{overdueCount} overdue</span>
+                    ) : dueSoonCount > 0 ? (
+                      <span className="text-yellow-500">{dueSoonCount} due soon</span>
                     ) : (
-                      <ManualLimitInput cardId={card.id} />
+                      <span className="text-emerald-500">All clear</span>
                     )}
-                  </div>
-
-                  {utilization != null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Utilization</span>
-                      <span
-                        className={`sensitive-value text-sm font-semibold ${
-                          utilization >= 70
-                            ? 'text-red-600'
-                            : utilization >= 30
-                            ? 'text-yellow-600'
-                            : 'text-emerald-600'
-                        }`}
-                      >
-                        {utilization}%
-                      </span>
-                    </div>
-                  )}
-
-                  {card.minimum_payment != null && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-500">Min. payment</span>
-                      <span className="sensitive-value text-sm font-semibold text-slate-900">
-                        {formatCurrency(card.minimum_payment)}
-                      </span>
-                    </div>
-                  )}
-
-                  {payUrl && (
-                    <a
-                      href={payUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 block w-full rounded-lg bg-slate-900 py-2 text-center text-sm font-medium text-white hover:bg-slate-700 transition-colors"
-                    >
-                      Pay this card →
-                    </a>
-                  )}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">Cards</span>
+                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {allCards.length}
+                  </span>
                 </div>
               </div>
-            )
-          })}
+            </div>
+          </div>
+
+          {/* ── Right: mobile summary + cards ── */}
+          <div className="flex-1 min-w-0">
+            <div className="grid grid-cols-2 gap-3 mb-5 lg:hidden">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Balance</p>
+                <p className="sensitive-value mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+                  {formatCurrency(totalBalance)}
+                </p>
+              </div>
+              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Utilization</p>
+                <p className={`sensitive-value mt-1 text-lg font-bold ${
+                  overallUtilization == null ? 'text-slate-900 dark:text-slate-100'
+                  : overallUtilization >= 30 ? 'text-yellow-600'
+                  : 'text-emerald-600'
+                }`}>
+                  {overallUtilization != null ? `${overallUtilization}%` : '—'}
+                </p>
+              </div>
+            </div>
+
+            {/* Cards grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {allCards.map((card) => {
+                const accentColor = colorById[card.id]
+                const utilization =
+                  card.balance_current != null && card.balance_limit != null
+                    ? calcUtilization(card.balance_current, card.balance_limit)
+                    : null
+
+                const availableCredit =
+                  card.balance_available ??
+                  (card.balance_limit != null && card.balance_current != null
+                    ? card.balance_limit - card.balance_current
+                    : null)
+
+                const dueDate = card.due_date ? new Date(`${card.due_date}T12:00:00`) : null
+                const dueDateStatus = dueDate ? getDueDateStatus(dueDate) : null
+
+                const institution = card.connected_accounts as {
+                  institution_name: string
+                  institution_id: string
+                } | null
+
+                const institutionName =
+                  institution?.institution_name ?? card.institution_name ?? 'Credit Card'
+                const payUrl = institution
+                  ? getPaymentUrl(institution.institution_id, institution.institution_name)
+                  : null
+                const isManual = card.source === 'manual'
+
+                const dueDateBadge = {
+                  overdue: 'bg-red-500/20 text-red-300 border-red-500/30',
+                  'due-soon': 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30',
+                  upcoming: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30',
+                }
+
+                const dueDateLabel =
+                  dueDateStatus === 'overdue' ? 'Overdue'
+                  : dueDateStatus === 'due-soon' ? 'Due soon'
+                  : dueDate
+                  ? `Due ${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+                  : null
+
+                return (
+                  <div
+                    key={card.id}
+                    className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-700/40"
+                  >
+                    {/* Accent bar */}
+                    <div className="h-1" style={{ backgroundColor: accentColor }} />
+
+                    {/* Dark header — deeper gradient in both modes */}
+                    <div className="bg-gradient-to-br from-slate-900 to-black dark:from-black dark:to-slate-950 px-5 pt-4 pb-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
+                            {institutionName}
+                          </p>
+                          <p className="mt-0.5 text-base font-semibold text-white leading-tight">
+                            {card.name}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {isManual && (
+                            <EditManualCardButton
+                              cardId={card.id}
+                              cardName={card.name}
+                              currentBalance={card.balance_current}
+                              currentLimit={card.balance_limit}
+                              currentDueDate={card.due_date}
+                              currentMinPayment={card.minimum_payment}
+                            />
+                          )}
+                          <RemoveCardButton cardId={card.id} cardName={card.name} />
+                        </div>
+                      </div>
+
+                      <div className="mt-4">
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Current balance</p>
+                        <p className="sensitive-value mt-0.5 text-3xl font-bold text-white tabular-nums">
+                          {card.balance_current != null ? formatCurrency(card.balance_current) : '—'}
+                        </p>
+                      </div>
+
+                      <div className="mt-3 flex items-center justify-between">
+                        <p className="font-mono text-sm tracking-widest text-slate-500">
+                          {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
+                        </p>
+                        {dueDate && dueDateStatus && dueDateLabel && (
+                          <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dueDateBadge[dueDateStatus]}`}>
+                            {dueDateLabel}
+                          </span>
+                        )}
+                      </div>
+
+                      {utilization != null && (
+                        <div className="mt-3 h-1 w-full rounded-full bg-white/10">
+                          <div
+                            className="h-1 rounded-full transition-all"
+                            style={{ width: `${Math.min(utilization, 100)}%`, backgroundColor: accentColor }}
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Stats — light in light mode, dark in dark mode */}
+                    <div className="bg-white dark:bg-slate-900 px-5 py-4 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">Available</span>
+                        <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {availableCredit != null ? formatCurrency(availableCredit) : '—'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-500 dark:text-slate-400">Credit limit</span>
+                        {card.balance_limit != null ? (
+                          <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(card.balance_limit)}
+                          </span>
+                        ) : (
+                          <ManualLimitInput cardId={card.id} />
+                        )}
+                      </div>
+                      {utilization != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Utilization</span>
+                          <span className="sensitive-value text-sm font-semibold" style={{ color: accentColor }}>
+                            {utilization}%
+                          </span>
+                        </div>
+                      )}
+                      {card.minimum_payment != null && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-slate-500 dark:text-slate-400">Min. payment</span>
+                          <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {formatCurrency(card.minimum_payment)}
+                          </span>
+                        </div>
+                      )}
+                      {payUrl && (
+                        <a
+                          href={payUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 block w-full rounded-lg py-2 text-center text-sm font-medium text-white transition-colors"
+                          style={{ backgroundColor: accentColor }}
+                        >
+                          Pay this card →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
         </div>
       )}
     </div>

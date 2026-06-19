@@ -33,19 +33,20 @@ export async function DELETE(request: Request) {
     .eq('id', card_id)
     .eq('user_id', userId)
 
-  // Check if this was the last card from that bank connection
-  const { count } = await supabaseAdmin
-    .from('cards')
-    .select('*', { count: 'exact', head: true })
-    .eq('connected_account_id', card.connected_account_id)
+  // Manual cards have no bank connection to clean up
+  if (card.connected_account_id) {
+    const { count } = await supabaseAdmin
+      .from('cards')
+      .select('*', { count: 'exact', head: true })
+      .eq('connected_account_id', card.connected_account_id)
 
-  // If no cards left from this connection, remove the connection too
-  if (count === 0) {
-    await supabaseAdmin
-      .from('connected_accounts')
-      .delete()
-      .eq('id', card.connected_account_id)
-      .eq('user_id', userId)
+    if (count === 0) {
+      await supabaseAdmin
+        .from('connected_accounts')
+        .delete()
+        .eq('id', card.connected_account_id)
+        .eq('user_id', userId)
+    }
   }
 
   return Response.json({ success: true })

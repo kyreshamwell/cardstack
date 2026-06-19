@@ -83,41 +83,41 @@ export function EditManualCardButton({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={close} />
 
-          <div className="relative w-full max-w-sm rounded-2xl bg-white shadow-xl">
-            <div className="border-b border-slate-100 px-6 py-4">
-              <h2 className="text-base font-semibold text-slate-900">Update {cardName}</h2>
-              <p className="mt-0.5 text-sm text-slate-500">Edit your current balance and details.</p>
+          <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 shadow-xl">
+            <div className="border-b border-slate-100 dark:border-slate-800 px-6 py-4">
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Update {cardName}</h2>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Edit your current balance and details.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                     Balance
                   </label>
-                  <div className="flex items-center rounded-lg border border-slate-200 px-3 py-2 focus-within:border-slate-400">
+                  <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 focus-within:border-slate-400 dark:focus-within:border-slate-500">
                     <span className="text-sm text-slate-400 mr-1">$</span>
                     <input
                       type="text"
                       inputMode="decimal"
                       value={form.balance_current}
                       onChange={(e) => set('balance_current', e.target.value)}
-                      className="w-full text-sm text-slate-900 focus:outline-none"
+                      className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
                     />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                     Limit
                   </label>
-                  <div className="flex items-center rounded-lg border border-slate-200 px-3 py-2 focus-within:border-slate-400">
+                  <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 focus-within:border-slate-400 dark:focus-within:border-slate-500">
                     <span className="text-sm text-slate-400 mr-1">$</span>
                     <input
                       type="text"
                       inputMode="decimal"
                       value={form.balance_limit}
                       onChange={(e) => set('balance_limit', e.target.value)}
-                      className="w-full text-sm text-slate-900 focus:outline-none"
+                      className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -125,28 +125,28 @@ export function EditManualCardButton({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                     Due date
                   </label>
                   <input
                     type="date"
                     value={form.due_date}
                     onChange={(e) => set('due_date', e.target.value)}
-                    className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-900 focus:border-slate-400 focus:outline-none"
+                    className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-slate-400 dark:focus:border-slate-500 focus:outline-none"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600 uppercase tracking-wide">
+                  <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
                     Min. payment
                   </label>
-                  <div className="flex items-center rounded-lg border border-slate-200 px-3 py-2 focus-within:border-slate-400">
+                  <div className="flex items-center rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 focus-within:border-slate-400 dark:focus-within:border-slate-500">
                     <span className="text-sm text-slate-400 mr-1">$</span>
                     <input
                       type="text"
                       inputMode="decimal"
                       value={form.minimum_payment}
                       onChange={(e) => set('minimum_payment', e.target.value)}
-                      className="w-full text-sm text-slate-900 focus:outline-none"
+                      className="w-full bg-transparent text-sm text-slate-900 dark:text-slate-100 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -158,7 +158,7 @@ export function EditManualCardButton({
                 <button
                   type="button"
                   onClick={close}
-                  className="flex-1 rounded-lg border border-slate-200 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors"
+                  className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
                   Cancel
                 </button>

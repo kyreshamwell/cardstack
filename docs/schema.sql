@@ -65,3 +65,21 @@ create policy "Users see their own cards"
 create index on connected_accounts (user_id);
 create index on cards (user_id);
 create index on cards (connected_account_id);
+
+-- ─── Manual card support (run these ALTER statements if cards table already exists) ─
+-- connected_account_id and plaid_account_id are null for manually added cards
+alter table cards alter column connected_account_id drop not null;
+alter table cards alter column plaid_account_id    drop not null;
+
+-- source distinguishes Plaid-connected cards from manually entered ones
+alter table cards add column if not exists source text not null default 'plaid';
+
+-- institution_name stored directly on manual cards (Plaid cards use connected_accounts join)
+alter table cards add column if not exists institution_name text;
+
+-- liabilities columns added by Plaid sync
+alter table cards add column if not exists due_date             date;
+alter table cards add column if not exists minimum_payment      numeric(12,2);
+alter table cards add column if not exists last_payment_amount  numeric(12,2);
+alter table cards add column if not exists last_payment_date    date;
+alter table cards add column if not exists is_overdue           boolean;

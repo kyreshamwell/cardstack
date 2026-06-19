@@ -7,10 +7,12 @@ import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase'
 import { ConnectCardButton } from '@/components/cards/ConnectCardButton'
 import { RefreshButton } from '@/components/cards/RefreshButton'
+import { AddManualCardButton } from '@/components/cards/AddManualCardButton'
 import { formatCurrency, calcUtilization, getDueDateStatus } from '@/lib/utils'
 import { getPaymentUrl } from '@/lib/institutions'
 import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
+import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
 import { PrivacyToggle } from '@/components/cards/PrivacyToggle'
 
 export default async function DashboardPage() {
@@ -22,27 +24,100 @@ export default async function DashboardPage() {
     .eq('user_id', userId)
     .order('created_at', { ascending: true })
 
+  // ── Summary calculations across all cards ──────────────────────────────────
+  const allCards = cards ?? []
+  const cardsWithLimit = allCards.filter(
+    (c) => c.balance_current != null && c.balance_limit != null
+  )
+  const totalBalance = allCards.reduce((sum, c) => sum + (c.balance_current ?? 0), 0)
+  const totalLimit = cardsWithLimit.reduce((sum, c) => sum + (c.balance_limit ?? 0), 0)
+  const overallUtilization =
+    totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : null
+  const overdueCount = allCards.filter((c) => {
+    if (!c.due_date) return false
+    return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'overdue'
+  }).length
+  const dueSoonCount = allCards.filter((c) => {
+    if (!c.due_date) return false
+    return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'due-soon'
+  }).length
+
   return (
     <div>
+      {/* ── Page header ── */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900">Your Cards</h1>
         <div className="flex items-center gap-2">
           <PrivacyToggle />
           <RefreshButton />
+          <AddManualCardButton />
           <ConnectCardButton />
         </div>
       </div>
 
-      {!cards || cards.length === 0 ? (
+      {/* ── Summary bar ── */}
+      {allCards.length > 0 && (
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Total balance
+            </p>
+            <p className="sensitive-value mt-1 text-xl font-bold text-slate-900">
+              {formatCurrency(totalBalance)}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Total limit
+            </p>
+            <p className="sensitive-value mt-1 text-xl font-bold text-slate-900">
+              {totalLimit > 0 ? formatCurrency(totalLimit) : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Overall utilization
+            </p>
+            <p
+              className={`sensitive-value mt-1 text-xl font-bold ${
+                overallUtilization == null
+                  ? 'text-slate-900'
+                  : overallUtilization >= 30
+                  ? 'text-red-600'
+                  : 'text-emerald-600'
+              }`}
+            >
+              {overallUtilization != null ? `${overallUtilization}%` : '—'}
+            </p>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white px-4 py-3">
+            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+              Alerts
+            </p>
+            <p className="mt-1 text-xl font-bold text-slate-900">
+              {overdueCount > 0 ? (
+                <span className="text-red-600">{overdueCount} overdue</span>
+              ) : dueSoonCount > 0 ? (
+                <span className="text-yellow-600">{dueSoonCount} due soon</span>
+              ) : (
+                <span className="text-emerald-600">All clear</span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Cards grid ── */}
+      {allCards.length === 0 ? (
         <div className="mt-12 text-center">
           <p className="text-slate-500">No cards connected yet.</p>
           <p className="mt-1 text-sm text-slate-400">
-            Click "Connect a card" to link your first credit card via Plaid.
+            Connect a card via Plaid or add one manually.
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {cards.map((card) => {
+        <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {allCards.map((card) => {
             const hasUtilizationData = card.balance_current != null && card.balance_limit != null
             const utilization = hasUtilizationData
               ? calcUtilization(card.balance_current, card.balance_limit)
@@ -53,7 +128,6 @@ export default async function DashboardPage() {
                 ? card.balance_limit - card.balance_current
                 : null)
 
-            // Parse as local noon to avoid UTC timezone shift
             const dueDate = card.due_date
               ? new Date(`${card.due_date}T12:00:00`)
               : null
@@ -64,14 +138,20 @@ export default async function DashboardPage() {
               institution_id: string
             } | null
 
+            // Manual cards store institution_name directly on the card row
+            const institutionName =
+              institution?.institution_name ?? card.institution_name ?? 'Credit Card'
+
             const payUrl = institution
               ? getPaymentUrl(institution.institution_id, institution.institution_name)
               : null
 
+            const isManual = card.source === 'manual'
+
             const dueDateColors = {
-              overdue: { bar: 'bg-red-500', badge: 'bg-red-500/20 text-red-300 border-red-500/30' },
-              'due-soon': { bar: 'bg-yellow-400', badge: 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30' },
-              upcoming: { bar: 'bg-emerald-400', badge: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30' },
+              overdue: { badge: 'bg-red-500/20 text-red-300 border-red-500/30' },
+              'due-soon': { badge: 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30' },
+              upcoming: { badge: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30' },
             }
 
             const dueDateLabels = {
@@ -89,22 +169,37 @@ export default async function DashboardPage() {
               >
                 {/* ── Dark card header ── */}
                 <div className="relative bg-gradient-to-br from-slate-800 to-slate-900 px-5 pt-5 pb-6">
-                  {/* Top row: institution + trash */}
+                  {/* Top row: institution + actions */}
                   <div className="flex items-start justify-between">
                     <div>
                       <p className="text-xs font-medium uppercase tracking-widest text-slate-400">
-                        {institution?.institution_name ?? 'Credit Card'}
+                        {institutionName}
                       </p>
                       <p className="mt-0.5 text-base font-semibold text-white leading-tight">
                         {card.name}
                       </p>
                     </div>
-                    <RemoveCardButton cardId={card.id} cardName={card.name} />
+                    <div className="flex items-center gap-2">
+                      {/* Edit pencil — only on manual cards */}
+                      {isManual && (
+                        <EditManualCardButton
+                          cardId={card.id}
+                          cardName={card.name}
+                          currentBalance={card.balance_current}
+                          currentLimit={card.balance_limit}
+                          currentDueDate={card.due_date}
+                          currentMinPayment={card.minimum_payment}
+                        />
+                      )}
+                      <RemoveCardButton cardId={card.id} cardName={card.name} />
+                    </div>
                   </div>
 
-                  {/* Balance — big and center-stage */}
+                  {/* Balance */}
                   <div className="mt-5">
-                    <p className="text-xs text-slate-400 uppercase tracking-wide">Current balance</p>
+                    <p className="text-xs text-slate-400 uppercase tracking-wide">
+                      Current balance
+                    </p>
                     <p className="sensitive-value mt-1 text-3xl font-bold text-white tabular-nums">
                       {card.balance_current != null
                         ? formatCurrency(card.balance_current)
@@ -115,7 +210,7 @@ export default async function DashboardPage() {
                   {/* Card mask + due date badge */}
                   <div className="mt-4 flex items-center justify-between">
                     <p className="font-mono text-sm tracking-widest text-slate-400">
-                      {card.mask ? `•••• ${card.mask}` : ''}
+                      {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
                     </p>
                     {dueDate && dueDateStatus && (
                       <span
@@ -128,7 +223,7 @@ export default async function DashboardPage() {
                     )}
                   </div>
 
-                  {/* Utilization bar at bottom of header */}
+                  {/* Utilization bar */}
                   {utilization != null && (
                     <div className="mt-4 h-1 w-full rounded-full bg-white/10">
                       <div
@@ -147,7 +242,6 @@ export default async function DashboardPage() {
 
                 {/* ── White stat section ── */}
                 <div className="bg-white px-5 py-4 space-y-3">
-                  {/* Available */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-500">Available</span>
                     <span className="sensitive-value text-sm font-semibold text-slate-900">
@@ -155,7 +249,6 @@ export default async function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Limit */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-slate-500">Credit limit</span>
                     {card.balance_limit != null ? (
@@ -167,7 +260,6 @@ export default async function DashboardPage() {
                     )}
                   </div>
 
-                  {/* Utilization % — only when we have the data */}
                   {utilization != null && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-500">Utilization</span>
@@ -185,7 +277,6 @@ export default async function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Minimum payment */}
                   {card.minimum_payment != null && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-500">Min. payment</span>
@@ -195,7 +286,6 @@ export default async function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Pay button */}
                   {payUrl && (
                     <a
                       href={payUrl}

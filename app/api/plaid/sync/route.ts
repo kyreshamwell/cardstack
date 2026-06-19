@@ -33,46 +33,59 @@ export async function POST() {
   }
 
   // For each connection, fetch latest balances and liabilities from Plaid
+  let synced = 0
+  let failed = 0
+
   for (const connection of connections) {
     const accessToken = connection.plaid_access_token
 
-    // Update balances
-    const accountsResponse = await plaidClient.accountsGet({ access_token: accessToken })
-    for (const account of accountsResponse.data.accounts) {
-      await supabaseAdmin
-        .from('cards')
-        .update({
-          balance_current: account.balances.current,
-          balance_available: account.balances.available,
-          balance_limit: account.balances.limit,
-          last_synced_at: new Date().toISOString(),
-        })
-        .eq('plaid_account_id', account.account_id)
-        .eq('user_id', userId)
-    }
-
-    // Update due dates + payment info (if institution supports Liabilities)
     try {
-      const liabilitiesResponse = await plaidClient.liabilitiesGet({ access_token: accessToken })
-      const creditLiabilities = liabilitiesResponse.data.liabilities.credit ?? []
-
-      for (const liability of creditLiabilities) {
+      // Update balances
+      const accountsResponse = await plaidClient.accountsGet({ access_token: accessToken })
+      for (const account of accountsResponse.data.accounts) {
         await supabaseAdmin
           .from('cards')
           .update({
-            due_date: liability.next_payment_due_date ?? null,
-            minimum_payment: liability.minimum_payment_amount ?? null,
-            last_payment_amount: liability.last_payment_amount ?? null,
-            last_payment_date: liability.last_payment_date ?? null,
-            is_overdue: liability.is_overdue ?? false,
+            balance_current: account.balances.current,
+            balance_available: account.balances.available,
+            balance_limit: account.balances.limit,
+            last_synced_at: new Date().toISOString(),
           })
-          .eq('plaid_account_id', liability.account_id)
+          .eq('plaid_account_id', account.account_id)
           .eq('user_id', userId)
       }
-    } catch {
-      // Institution doesn't support Liabilities — skip, balances already updated
+
+      // Update due dates + payment info (if institution supports Liabilities)
+      try {
+        const liabilitiesResponse = await plaidClient.liabilitiesGet({ access_token: accessToken })
+        const creditLiabilities = liabilitiesResponse.data.liabilities.credit ?? []
+
+        for (const liability of creditLiabilities) {
+          await supabaseAdmin
+            .from('cards')
+            .update({
+              due_date: liability.next_payment_due_date ?? null,
+              minimum_payment: liability.minimum_payment_amount ?? null,
+              last_payment_amount: liability.last_payment_amount ?? null,
+              last_payment_date: liability.last_payment_date ?? null,
+              is_overdue: liability.is_overdue ?? false,
+            })
+            .eq('plaid_account_id', liability.account_id)
+            .eq('user_id', userId)
+        }
+      } catch {
+        // Institution doesn't support Liabilities — skip, balances already updated
+      }
+
+      synced++
+    } catch (err: unknown) {
+      // Token expired, item needs re-auth, or institution error — skip this connection
+      const status = (err as { response?: { data?: { error_code?: string } } })
+        ?.response?.data?.error_code
+      console.error(`Sync failed for connection ${connection.id}: ${status ?? 'unknown error'}`)
+      failed++
     }
   }
 
-  return Response.json({ success: true, synced: connections.length })
+  return Response.json({ success: true, synced, failed })
 }

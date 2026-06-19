@@ -32,11 +32,11 @@ export function RefreshButton() {
     <button
       onClick={handleRefresh}
       disabled={loading}
-      className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      title={loading ? 'Refreshing...' : 'Refresh balances'}
+      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {/* Spinning icon when loading */}
       <svg
-        className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`}
+        className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`}
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -48,7 +48,6 @@ export function RefreshButton() {
           d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
         />
       </svg>
-      {loading ? 'Refreshing...' : 'Refresh'}
     </button>
   )
 }

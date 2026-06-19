@@ -8,7 +8,6 @@ import { getPaymentUrl } from '@/lib/institutions'
 import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
 import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
-import { PrivacyToggle } from '@/components/cards/PrivacyToggle'
 import { DonutChart, type ChartSlice } from '@/components/cards/DonutChart'
 
 const CARD_COLORS = [
@@ -66,7 +65,6 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Your Cards</h1>
         <div className="flex items-center gap-2">
-          <PrivacyToggle />
           <RefreshButton />
           <AddManualCardButton />
           <ConnectCardButton />
@@ -281,12 +279,12 @@ export default async function DashboardPage() {
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-slate-500 dark:text-slate-400">Credit limit</span>
-                        {card.balance_limit != null ? (
+                        {isManual ? (
                           <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {formatCurrency(card.balance_limit)}
+                            {card.balance_limit != null ? formatCurrency(card.balance_limit) : '—'}
                           </span>
                         ) : (
-                          <ManualLimitInput cardId={card.id} />
+                          <ManualLimitInput cardId={card.id} currentLimit={card.balance_limit} />
                         )}
                       </div>
                       {utilization != null && (

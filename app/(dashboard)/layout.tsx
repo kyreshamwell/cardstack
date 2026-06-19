@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
+import { PrivacyToggle } from '@/components/cards/PrivacyToggle'
 import { NavUserButton } from '@/components/NavUserButton'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -16,6 +17,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </Link>
         <div className="flex items-center gap-3">
           <DarkModeToggle />
+          <PrivacyToggle />
           <NavUserButton />
         </div>
       </nav>

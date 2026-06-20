@@ -18,8 +18,8 @@ export function NavUserButton() {
         <span className="text-xs font-semibold text-white">{initials}</span>
       </div>
 
-      {/* First name */}
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-200 pointer-events-none">
+      {/* First name — hidden on small screens */}
+      <span className="hidden sm:inline text-sm font-medium text-slate-700 dark:text-slate-200 pointer-events-none">
         {firstName}
       </span>
 

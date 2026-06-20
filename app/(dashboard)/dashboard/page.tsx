@@ -62,7 +62,7 @@ export default async function DashboardPage() {
   return (
     <div>
       {/* ── Header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Your Cards</h1>
         <div className="flex items-center gap-2">
           <RefreshButton />
@@ -165,7 +165,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Cards grid */}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
               {allCards.map((card) => {
                 const accentColor = colorById[card.id]
                 const utilization =

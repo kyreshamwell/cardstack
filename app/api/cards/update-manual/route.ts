@@ -5,7 +5,7 @@ export async function PATCH(request: Request) {
   const { userId } = await auth()
   if (!userId) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { card_id, balance_current, balance_limit, due_date, minimum_payment } =
+  const { card_id, name, institution_name, balance_current, balance_limit, due_date, minimum_payment } =
     await request.json()
 
   if (!card_id) return Response.json({ error: 'card_id required' }, { status: 400 })
@@ -22,6 +22,8 @@ export async function PATCH(request: Request) {
   }
 
   const updates: Record<string, unknown> = {}
+  if (name) updates.name = name.trim()
+  if (institution_name !== undefined) updates.institution_name = institution_name?.trim() || null
   const newLimit = balance_limit != null ? Number(balance_limit) : card.balance_limit
   if (balance_current != null) {
     updates.balance_current = Number(balance_current)

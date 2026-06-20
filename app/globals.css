@@ -20,6 +20,17 @@
   --color-success: #22c55e;    /* green-500 — paid, low utilization */
 }
 
+/* iOS safe-area — push content above home indicator */
+body {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background-color: #f8fafc; /* slate-50 — matches dashboard bg so overscroll matches */
+}
+@variant dark {
+  body {
+    background-color: #020617; /* slate-950 — matches dark dashboard bg */
+  }
+}
+
 /* NavUserButton — Clerk trigger is invisible but covers the pill for clicks */
 .nav-user-pill .cl-userButtonTrigger {
   position: absolute !important;

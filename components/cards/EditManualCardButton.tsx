@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 interface Props {
   cardId: string
   cardName: string
+  currentInstitution: string | null
   currentBalance: number | null
   currentLimit: number | null
   currentDueDate: string | null
@@ -15,6 +16,7 @@ interface Props {
 export function EditManualCardButton({
   cardId,
   cardName,
+  currentInstitution,
   currentBalance,
   currentLimit,
   currentDueDate,
@@ -22,6 +24,8 @@ export function EditManualCardButton({
 }: Props) {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
+    name: cardName,
+    institution_name: currentInstitution ?? '',
     balance_current: currentBalance?.toString() ?? '',
     balance_limit: currentLimit?.toString() ?? '',
     due_date: currentDueDate ?? '',
@@ -42,6 +46,10 @@ export function EditManualCardButton({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!form.name.trim()) {
+      setError('Card name is required.')
+      return
+    }
     setSaving(true)
     setError('')
 
@@ -50,6 +58,8 @@ export function EditManualCardButton({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         card_id: cardId,
+        name: form.name.trim(),
+        institution_name: form.institution_name.trim(),
         balance_current: form.balance_current ? parseFloat(form.balance_current) : undefined,
         balance_limit: form.balance_limit ? parseFloat(form.balance_limit) : undefined,
         due_date: form.due_date,
@@ -85,11 +95,36 @@ export function EditManualCardButton({
 
           <div className="relative w-full max-w-sm rounded-2xl bg-white dark:bg-slate-900 shadow-xl">
             <div className="border-b border-slate-100 dark:border-slate-800 px-6 py-4">
-              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Update {cardName}</h2>
-              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Edit your current balance and details.</p>
+              <h2 className="text-base font-semibold text-slate-900 dark:text-slate-100">Edit card</h2>
+              <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">Update any details for this card.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  Card name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 focus:border-slate-400 dark:focus:border-slate-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
+                  Bank / Issuer
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Chase"
+                  value={form.institution_name}
+                  onChange={(e) => set('institution_name', e.target.value)}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-slate-400 dark:focus:border-slate-500 focus:outline-none"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide">
@@ -165,7 +200,7 @@ export function EditManualCardButton({
                 <button
                   type="submit"
                   disabled={saving}
-                  className="flex-1 rounded-lg bg-slate-900 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50 transition-colors"
+                  className="flex-1 rounded-lg bg-slate-900 dark:bg-slate-700 py-2 text-sm font-medium text-white hover:bg-slate-700 dark:hover:bg-slate-600 disabled:opacity-50 transition-colors"
                 >
                   {saving ? 'Saving…' : 'Save'}
                 </button>

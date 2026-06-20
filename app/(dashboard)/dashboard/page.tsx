@@ -231,6 +231,7 @@ export default async function DashboardPage() {
                             <EditManualCardButton
                               cardId={card.id}
                               cardName={card.name}
+                              currentInstitution={card.institution_name ?? null}
                               currentBalance={card.balance_current}
                               currentLimit={card.balance_limit}
                               currentDueDate={card.due_date}

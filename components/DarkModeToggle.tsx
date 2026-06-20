@@ -11,6 +11,9 @@ function getSystemPreference(): Mode {
 
 function applyMode(mode: Mode) {
   document.documentElement.classList.toggle('dark', mode === 'dark')
+  // Keep Safari's top bar in sync with the app's dark mode (not system preference)
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', mode === 'dark' ? '#0f172a' : '#ffffff')
 }
 
 export function DarkModeToggle() {

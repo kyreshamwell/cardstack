@@ -14,10 +14,9 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#0f172a' },
-  ],
+  // Single tag — DarkModeToggle updates it via JS so it tracks the in-app
+  // toggle rather than the OS preference (our dark mode is class-based)
+  themeColor: '#ffffff',
   viewportFit: 'cover',
 }
 

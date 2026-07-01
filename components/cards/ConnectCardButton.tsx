@@ -6,7 +6,7 @@ import { usePlaidLink } from 'react-plaid-link'
 export function ConnectCardButton() {
   const [linkToken, setLinkToken] = useState<string | null>(null)
   const [isExchanging, setIsExchanging] = useState(false)
-  const [tokenError, setTokenError] = useState(false)
+  const [tokenError, setTokenError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/plaid/create-link-token', { method: 'POST' })
@@ -15,13 +15,11 @@ export function ConnectCardButton() {
         if (data.link_token) {
           setLinkToken(data.link_token)
         } else {
-          console.error('Plaid link token error:', data.error)
-          setTokenError(true)
+          setTokenError(data.error ?? 'Unknown error')
         }
       })
       .catch((err) => {
-        console.error('Failed to create link token:', err)
-        setTokenError(true)
+        setTokenError(String(err))
       })
   }, [])
 
@@ -58,7 +56,7 @@ export function ConnectCardButton() {
     return (
       <button
         disabled
-        title="Plaid configuration error — check NEXT_PUBLIC_APP_URL and Plaid credentials in Vercel"
+        title={tokenError}
         className="rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm font-medium text-red-500 cursor-not-allowed"
       >
         Config error

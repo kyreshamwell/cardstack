@@ -43,13 +43,14 @@ export async function POST() {
 
     return Response.json({ link_token: response.data.link_token })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err)
-    // Log the full Plaid error response so we can see the exact reason
+    let plaidError: string = err instanceof Error ? err.message : String(err)
     if (err && typeof err === 'object' && 'response' in err) {
-      const axiosErr = err as { response: { data: unknown } }
-      console.error('Plaid error details:', JSON.stringify(axiosErr.response.data, null, 2))
+      const axiosErr = err as { response: { data: { error_code?: string; error_message?: string } } }
+      const d = axiosErr.response?.data
+      console.error('Plaid error details:', JSON.stringify(d, null, 2))
+      if (d?.error_code) plaidError = `${d.error_code}: ${d.error_message ?? ''}`
     }
-    console.error('Plaid link token error:', err)
-    return Response.json({ error: message }, { status: 500 })
+    console.error('Plaid link token error:', plaidError)
+    return Response.json({ error: plaidError }, { status: 500 })
   }
 }

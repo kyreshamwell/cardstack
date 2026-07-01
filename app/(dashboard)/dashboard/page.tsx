@@ -39,7 +39,7 @@ export default async function DashboardPage() {
   const overallUtilization =
     totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : null
   const overdueCount = allCards.filter((c) => {
-    if (!c.due_date) return false
+    if (!c.due_date || c.minimum_payment === 0) return false
     return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'overdue'
   }).length
   const dueSoonCount = allCards.filter((c) => {
@@ -47,14 +47,15 @@ export default async function DashboardPage() {
     return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'due-soon'
   }).length
 
-  const chartSlices: ChartSlice[] = allCards
-    .filter((c) => c.balance_current != null && c.balance_current > 0)
-    .map((c, i) => ({
-      id: c.id,
-      name: c.name,
-      balance: c.balance_current,
-      color: CARD_COLORS[i % CARD_COLORS.length],
-    }))
+  // Every card gets a slice (even $0/no-balance ones) so every card has a
+  // clickable row in the left-panel legend — not just ones with a balance.
+  // Indexing off allCards (not a filtered subset) keeps colors in sync with colorById.
+  const chartSlices: ChartSlice[] = allCards.map((c, i) => ({
+    id: c.id,
+    name: c.name,
+    balance: c.balance_current ?? 0,
+    color: CARD_COLORS[i % CARD_COLORS.length],
+  }))
 
   const colorById: Record<string, string> = {}
   allCards.forEach((c, i) => {
@@ -196,7 +197,6 @@ export default async function DashboardPage() {
                   ? getInstitutionInfo(institution.institution_name)
                   : null
                 const payUrl = institutionInfo?.webUrl ?? null
-                const appLink = institutionInfo?.appLink ?? null
                 const isManual = card.source === 'manual'
 
                 const dueDateBadge = {
@@ -314,7 +314,6 @@ export default async function DashboardPage() {
                       {payUrl && (
                         <PayCardButton
                           webUrl={payUrl}
-                          appLink={appLink}
                           accentColor={accentColor}
                         />
                       )}

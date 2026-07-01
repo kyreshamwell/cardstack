@@ -41,6 +41,16 @@ body {
   height: 100% !important;
 }
 
+/* Card highlight — triggered from DonutChart click to scroll-and-identify a card */
+@keyframes card-pulse {
+  0%   { box-shadow: 0 0 0 0px rgba(99, 102, 241, 0); }
+  20%  { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.55); }
+  100% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
+}
+.card-highlight {
+  animation: card-pulse 1.6s ease-out forwards;
+}
+
 /* Privacy mode — blurs any element marked sensitive-value */
 .privacy-mode .sensitive-value {
   filter: blur(8px);

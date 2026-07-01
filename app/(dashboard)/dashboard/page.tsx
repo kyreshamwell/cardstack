@@ -4,7 +4,8 @@ import { ConnectCardButton } from '@/components/cards/ConnectCardButton'
 import { RefreshButton } from '@/components/cards/RefreshButton'
 import { AddManualCardButton } from '@/components/cards/AddManualCardButton'
 import { formatCurrency, calcUtilization, getDueDateStatus } from '@/lib/utils'
-import { getPaymentUrl } from '@/lib/institutions'
+import { getPaymentUrl, getAppLink } from '@/lib/institutions'
+import { PayCardButton } from '@/components/cards/PayCardButton'
 import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
 import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
@@ -190,7 +191,10 @@ export default async function DashboardPage() {
                 const institutionName =
                   institution?.institution_name ?? card.institution_name ?? 'Credit Card'
                 const payUrl = institution
-                  ? getPaymentUrl(institution.institution_id, institution.institution_name)
+                  ? getPaymentUrl(institution.institution_id)
+                  : null
+                const appLink = institution
+                  ? getAppLink(institution.institution_id)
                   : null
                 const isManual = card.source === 'manual'
 
@@ -210,6 +214,7 @@ export default async function DashboardPage() {
                 return (
                   <div
                     key={card.id}
+                    id={`card-${card.id}`}
                     className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-700/40"
                   >
                     {/* Accent bar */}
@@ -253,7 +258,7 @@ export default async function DashboardPage() {
                         <p className="font-mono text-sm tracking-widest text-slate-500">
                           {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
                         </p>
-                        {dueDate && dueDateStatus && dueDateLabel && (
+                        {dueDate && dueDateStatus && dueDateLabel && card.minimum_payment !== 0 && (
                           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dueDateBadge[dueDateStatus]}`}>
                             {dueDateLabel}
                           </span>
@@ -305,15 +310,11 @@ export default async function DashboardPage() {
                         </div>
                       )}
                       {payUrl && (
-                        <a
-                          href={payUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="mt-1 block w-full rounded-lg py-2 text-center text-sm font-medium text-white transition-colors"
-                          style={{ backgroundColor: accentColor }}
-                        >
-                          Pay this card →
-                        </a>
+                        <PayCardButton
+                          webUrl={payUrl}
+                          appLink={appLink}
+                          accentColor={accentColor}
+                        />
                       )}
                     </div>
                   </div>

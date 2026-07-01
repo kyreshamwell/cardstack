@@ -20,13 +20,25 @@ export const INSTITUTION_PAYMENT_URLS: Record<string, string> = {
   ins_13:   'https://www.synchronybank.com',                       // Synchrony
 }
 
-/**
- * Returns the payment URL for a given Plaid institution ID.
- * Falls back to a Google search for the institution if we don't have it mapped.
- */
-export function getPaymentUrl(institutionId: string, institutionName: string): string {
-  return (
-    INSTITUTION_PAYMENT_URLS[institutionId] ??
-    `https://www.google.com/search?q=${encodeURIComponent(institutionName + ' credit card payment')}`
-  )
+// Custom URL schemes that open the bank's native mobile app (iOS + Android).
+// If the app isn't installed the OS ignores the scheme; PayCardButton falls back to the web URL.
+export const INSTITUTION_APP_LINKS: Record<string, string> = {
+  ins_3:  'chase://',
+  ins_4:  'bofa://',
+  ins_5:  'citi://',
+  ins_6:  'wellsfargo://',
+  ins_7:  'usbank://',
+  ins_8:  'amex://',
+  ins_9:  'capitalone://',
+  ins_10: 'discover://',
+}
+
+/** Direct payment URL for the institution, or null if unknown (no Google fallback). */
+export function getPaymentUrl(institutionId: string): string | null {
+  return INSTITUTION_PAYMENT_URLS[institutionId] ?? null
+}
+
+/** Native app deep-link for the institution, or null if not mapped. */
+export function getAppLink(institutionId: string): string | null {
+  return INSTITUTION_APP_LINKS[institutionId] ?? null
 }

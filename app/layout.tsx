@@ -49,6 +49,10 @@ export default function RootLayout({
           card: 'shadow-lg border border-slate-100',
           formButtonPrimary: 'bg-slate-900 hover:bg-slate-700 text-sm',
           footerActionLink: 'text-slate-900 hover:text-slate-600',
+          // iOS Safari auto-zooms the viewport when a focused input's font-size
+          // is under 16px, and that zoom can persist after redirecting to the
+          // dashboard post-sign-in. Keeping this at 16px+ stops the zoom at the source.
+          formFieldInput: 'text-base',
         },
       }}
     >

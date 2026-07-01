@@ -82,10 +82,10 @@ export default async function DashboardPage() {
           </p>
         </div>
       ) : (
-        <div className="mt-6 flex gap-6 items-start">
+        <div className="mt-6 flex flex-col lg:flex-row gap-6 lg:items-start">
 
           {/* ── Left panel ── */}
-          <div className="hidden lg:flex flex-col gap-4 w-64 flex-shrink-0">
+          <div className="flex flex-col gap-4 lg:w-64 lg:flex-shrink-0">
             <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
                 Balance breakdown
@@ -97,7 +97,7 @@ export default async function DashboardPage() {
               )}
             </div>
 
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
+            <div className="hidden lg:block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
               <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
                 Overview
               </p>

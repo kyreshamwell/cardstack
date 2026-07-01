@@ -1,44 +1,77 @@
 // lib/institutions.ts
 //
-// Maps Plaid institution IDs to their credit card payment page URLs.
-// When a user clicks "Pay" on a card, we link them directly to their bank's
-// payment page rather than a generic homepage.
-//
-// To find an institution's Plaid ID: dashboard.plaid.com → Search institutions
-// or check the institution_id stored in your connected_accounts table.
+// Maps bank names → payment URLs and mobile app deep links.
+// Name-pattern matching is used instead of Plaid institution IDs because
+// Plaid's internal IDs are not stable across environments and I don't have a
+// reliable ID→bank mapping. Regex on the institution_name string is more robust.
 
-export const INSTITUTION_PAYMENT_URLS: Record<string, string> = {
-  ins_3:    'https://account.chase.com/consumer/funding',          // Chase
-  ins_4:    'https://www.bankofamerica.com/credit-cards/payments', // Bank of America
-  ins_5:    'https://online.citibank.com',                         // Citi
-  ins_6:    'https://www.wellsfargo.com/credit-cards/payment',     // Wells Fargo
-  ins_7:    'https://www.usbank.com/credit-cards',                 // US Bank
-  ins_8:    'https://www.americanexpress.com/en-us/account/pay',   // Amex
-  ins_9:    'https://www.capitalone.com/credit-cards/payments',    // Capital One
-  ins_10:   'https://www.discover.com/credit-cards/pay-bill',      // Discover
-  ins_12:   'https://www.barclaysus.com',                          // Barclays
-  ins_13:   'https://www.synchronybank.com',                       // Synchrony
+interface InstitutionInfo {
+  webUrl: string
+  appLink: string | null  // iOS/Android custom URL scheme, null if unknown
 }
 
-// Custom URL schemes that open the bank's native mobile app (iOS + Android).
-// If the app isn't installed the OS ignores the scheme; PayCardButton falls back to the web URL.
-export const INSTITUTION_APP_LINKS: Record<string, string> = {
-  ins_3:  'chase://',
-  ins_4:  'bofa://',
-  ins_5:  'citi://',
-  ins_6:  'wellsfargo://',
-  ins_7:  'usbank://',
-  ins_8:  'amex://',
-  ins_9:  'capitalone://',
-  ins_10: 'discover://',
-}
+const NAME_PATTERNS: Array<{ pattern: RegExp } & InstitutionInfo> = [
+  {
+    pattern: /american express|amex/i,
+    webUrl: 'https://www.americanexpress.com/en-us/account/pay',
+    appLink: 'amex://',
+  },
+  {
+    pattern: /chase/i,
+    webUrl: 'https://account.chase.com/consumer/funding',
+    appLink: 'chase://',
+  },
+  {
+    pattern: /bank of america|bofa/i,
+    webUrl: 'https://www.bankofamerica.com/credit-cards/payments',
+    appLink: 'bofa://',
+  },
+  {
+    pattern: /citi/i,
+    webUrl: 'https://online.citibank.com',
+    appLink: 'citi://',
+  },
+  {
+    pattern: /wells fargo/i,
+    webUrl: 'https://www.wellsfargo.com/credit-cards/payment',
+    appLink: 'wellsfargo://',
+  },
+  {
+    pattern: /us bank/i,
+    webUrl: 'https://www.usbank.com/credit-cards',
+    appLink: 'usbank://',
+  },
+  {
+    pattern: /capital one/i,
+    webUrl: 'https://www.capitalone.com/credit-cards/payments',
+    appLink: 'capitalone://',
+  },
+  {
+    pattern: /discover/i,
+    webUrl: 'https://www.discover.com/credit-cards/pay-bill',
+    appLink: 'discover://',
+  },
+  {
+    pattern: /barclays/i,
+    webUrl: 'https://www.barclaysus.com',
+    appLink: null,
+  },
+  {
+    pattern: /synchrony/i,
+    webUrl: 'https://www.synchronybank.com',
+    appLink: null,
+  },
+]
 
-/** Direct payment URL for the institution, or null if unknown (no Google fallback). */
-export function getPaymentUrl(institutionId: string): string | null {
-  return INSTITUTION_PAYMENT_URLS[institutionId] ?? null
-}
-
-/** Native app deep-link for the institution, or null if not mapped. */
-export function getAppLink(institutionId: string): string | null {
-  return INSTITUTION_APP_LINKS[institutionId] ?? null
+/**
+ * Returns the payment URL and mobile app deep link for the given institution name.
+ * Returns null if the bank isn't in our list (button won't be shown).
+ */
+export function getInstitutionInfo(institutionName: string): InstitutionInfo | null {
+  for (const entry of NAME_PATTERNS) {
+    if (entry.pattern.test(institutionName)) {
+      return { webUrl: entry.webUrl, appLink: entry.appLink }
+    }
+  }
+  return null
 }

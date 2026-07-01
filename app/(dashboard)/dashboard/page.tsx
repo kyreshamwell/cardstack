@@ -4,11 +4,12 @@ import { ConnectCardButton } from '@/components/cards/ConnectCardButton'
 import { RefreshButton } from '@/components/cards/RefreshButton'
 import { AddManualCardButton } from '@/components/cards/AddManualCardButton'
 import { formatCurrency, calcUtilization, getDueDateStatus } from '@/lib/utils'
-import { getPaymentUrl, getAppLink } from '@/lib/institutions'
+import { getInstitutionInfo } from '@/lib/institutions'
 import { PayCardButton } from '@/components/cards/PayCardButton'
 import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
 import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
+import { CardFocusManager } from '@/components/cards/CardFocusManager'
 import { DonutChart, type ChartSlice } from '@/components/cards/DonutChart'
 
 const CARD_COLORS = [
@@ -166,6 +167,7 @@ export default async function DashboardPage() {
             </div>
 
             {/* Cards grid */}
+            <CardFocusManager />
             <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
               {allCards.map((card) => {
                 const accentColor = colorById[card.id]
@@ -190,12 +192,11 @@ export default async function DashboardPage() {
 
                 const institutionName =
                   institution?.institution_name ?? card.institution_name ?? 'Credit Card'
-                const payUrl = institution
-                  ? getPaymentUrl(institution.institution_id)
+                const institutionInfo = institution
+                  ? getInstitutionInfo(institution.institution_name)
                   : null
-                const appLink = institution
-                  ? getAppLink(institution.institution_id)
-                  : null
+                const payUrl = institutionInfo?.webUrl ?? null
+                const appLink = institutionInfo?.appLink ?? null
                 const isManual = card.source === 'manual'
 
                 const dueDateBadge = {
@@ -215,6 +216,7 @@ export default async function DashboardPage() {
                   <div
                     key={card.id}
                     id={`card-${card.id}`}
+                    data-card-id={card.id}
                     className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-700/40"
                   >
                     {/* Accent bar */}
@@ -258,7 +260,7 @@ export default async function DashboardPage() {
                         <p className="font-mono text-sm tracking-widest text-slate-500">
                           {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
                         </p>
-                        {dueDate && dueDateStatus && dueDateLabel && card.minimum_payment !== 0 && (
+                        {dueDate && dueDateStatus && dueDateLabel && !(dueDateStatus === 'overdue' && card.minimum_payment === 0) && (
                           <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dueDateBadge[dueDateStatus]}`}>
                             {dueDateLabel}
                           </span>

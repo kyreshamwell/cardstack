@@ -21,12 +21,8 @@ const cy = 80
 const circumference = 2 * Math.PI * r
 const GAP = 3
 
-function scrollToCard(id: string) {
-  const el = document.getElementById(`card-${id}`)
-  if (!el) return
-  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-  el.classList.add('card-highlight')
-  setTimeout(() => el.classList.remove('card-highlight'), 1600)
+function focusCard(id: string, name: string) {
+  window.dispatchEvent(new CustomEvent('card:focus', { detail: { id, name } }))
 }
 
 export function DonutChart({ slices, totalBalance }: Props) {
@@ -70,7 +66,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
                 className="transition-all duration-150 cursor-pointer"
                 onMouseEnter={() => setHovered(slice.id)}
                 onMouseLeave={() => setHovered(null)}
-                onClick={() => scrollToCard(slice.id)}
+                onClick={() => focusCard(slice.id, slice.name)}
               />
             )
           })}
@@ -109,7 +105,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
               key={slice.id}
               onMouseEnter={() => setHovered(slice.id)}
               onMouseLeave={() => setHovered(null)}
-              onClick={() => scrollToCard(slice.id)}
+              onClick={() => focusCard(slice.id, slice.name)}
               className={`flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors cursor-pointer ${
                 hovered === slice.id ? 'bg-slate-50 dark:bg-slate-800' : ''
               }`}

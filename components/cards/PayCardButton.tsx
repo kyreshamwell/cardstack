@@ -17,16 +17,17 @@ export function PayCardButton({ webUrl, appLink, accentColor }: Props) {
 
   function handleClick() {
     if (isMobile && appLink) {
-      // Try opening the native app. If the OS doesn't handle the scheme within
-      // 1.2 s (app not installed), fall back to the bank's website.
-      let appOpened = false
+      // On iOS Safari, navigate to the custom scheme.
+      // If the app is installed, iOS intercepts it and opens the app.
+      // If not, the browser ignores it or shows a "cannot open" alert —
+      // we set a short timeout to fall back to the bank's website instead.
       const fallback = setTimeout(() => {
-        if (!appOpened) window.location.href = webUrl
-      }, 1200)
-      window.addEventListener('blur', () => {
-        appOpened = true
-        clearTimeout(fallback)
-      }, { once: true })
+        window.location.href = webUrl
+      }, 1500)
+
+      // When the app opens, the page loses focus — clear the fallback so we
+      // don't also navigate to the website.
+      window.addEventListener('blur', () => clearTimeout(fallback), { once: true })
       window.location.href = appLink
     } else {
       window.open(webUrl, '_blank', 'noopener,noreferrer')

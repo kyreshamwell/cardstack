@@ -193,10 +193,9 @@ export default async function DashboardPage() {
 
                 const institutionName =
                   institution?.institution_name ?? card.institution_name ?? 'Credit Card'
-                const institutionInfo = institution
-                  ? getInstitutionInfo(institution.institution_name)
-                  : null
+                const institutionInfo = getInstitutionInfo(institutionName)
                 const payUrl = institutionInfo?.webUrl ?? null
+                const appScheme = institutionInfo?.appScheme
                 const isManual = card.source === 'manual'
 
                 const dueDateBadge = {
@@ -314,6 +313,7 @@ export default async function DashboardPage() {
                       {payUrl && (
                         <PayCardButton
                           webUrl={payUrl}
+                          appScheme={appScheme}
                           accentColor={accentColor}
                         />
                       )}

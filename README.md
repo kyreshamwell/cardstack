@@ -4,6 +4,21 @@
 
 A single dashboard for managing multiple credit cards — balances, due dates, and credit utilization at a glance. Built as a portfolio project targeting fintech engineering roles.
 
+The landing page includes a **live interactive demo** with mock data — no sign-up required to try it.
+
+---
+
+## Features
+
+- **Connect via Plaid** or add cards manually — mix and match
+- **Utilization tracking**, per-card and overall, with color-coded thresholds
+- **Balance breakdown donut chart** — click a slice or legend row to isolate a single card on screen
+- **Privacy mode** — one tap blurs every dollar amount, for screen-sharing or public spaces
+- **Dark mode**, synced with iOS Safari's status bar color
+- **Due date alerts** (overdue / due soon / upcoming), auto-suppressed for $0 minimum payments
+- **Pay this card** — opens the bank's real app when it supports it (Chase, Capital One), otherwise their real login page
+- Mobile-first layout with iOS safe-area handling (no white bars top/bottom in Safari)
+
 ---
 
 ## Stack
@@ -65,17 +80,34 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ```
 app/
+├── page.tsx                  # Landing page — hero + live interactive demo
 ├── (auth)/                   # Sign-in and sign-up (Clerk components)
 ├── (dashboard)/              # Protected routes — main app UI
 │   ├── layout.tsx            # Nav + page chrome for all dashboard routes
-│   └── page.tsx              # /dashboard — card grid
-└── api/                      # API routes (Plaid, webhooks) — added later
+│   └── page.tsx              # /dashboard — card grid, donut chart, overview
+└── api/
+    ├── cards/                # Add/edit/remove manual cards, update limits
+    └── plaid/                # Link token creation, token exchange, sync
+
+components/
+├── DemoDashboard.tsx         # Landing-page demo — real components, mock data
+├── DarkModeToggle.tsx
+├── NavUserButton.tsx         # Custom pill avatar wrapping Clerk's UserButton
+└── cards/
+    ├── DonutChart.tsx        # Balance breakdown, click-to-isolate a card
+    ├── CardFocusManager.tsx  # Shows/hides cards when a chart slice is clicked
+    ├── PrivacyToggle.tsx     # Blurs sensitive-value elements app-wide
+    ├── PayCardButton.tsx     # Opens the bank's app if supported, else website
+    ├── ConnectCardButton.tsx / ManualLimitInput.tsx / EditManualCardButton.tsx
+    └── AddManualCardButton.tsx / RemoveCardButton.tsx / RefreshButton.tsx
 
 lib/
-└── utils.ts                  # Pure utility functions (currency, utilization, due dates)
+├── utils.ts                  # Pure utility functions (currency, utilization, due dates)
+└── institutions.ts           # Bank name → payment URL / app-open link mapping
 
 docs/
 ├── PRD.md                    # Product requirements
+├── schema.sql                # Supabase table definitions
 └── decisions/                # Architecture decision records
 ```
 

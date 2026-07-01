@@ -36,7 +36,7 @@ export function NavUserButton() {
 
       {/* Invisible Clerk UserButton covering the full pill — handles clicks + popover */}
       <div className="absolute inset-0 overflow-hidden rounded-full">
-        <UserButton fallbackRedirectUrl="/" />
+        <UserButton afterSignOutUrl="/" />
       </div>
     </div>
   )

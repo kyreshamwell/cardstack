@@ -79,7 +79,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
               <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide leading-none">
                 {slices.find((s) => s.id === hovered)?.name.split(' ')[0]}
               </p>
-              <p className="mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
+              <p className="sensitive-value mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
                 {formatCurrency(slices.find((s) => s.id === hovered)?.balance ?? 0)}
               </p>
             </>
@@ -88,7 +88,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
               <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide leading-none">
                 Total
               </p>
-              <p className="mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
+              <p className="sensitive-value mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
                 {formatCurrency(totalBalance)}
               </p>
             </>
@@ -117,7 +117,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
                 />
                 <span className="text-sm text-slate-600 dark:text-slate-300 truncate">{slice.name}</span>
               </div>
-              <span className="ml-3 text-sm font-semibold text-slate-900 dark:text-slate-100 flex-shrink-0">
+              <span className="sensitive-value ml-3 text-sm font-semibold text-slate-900 dark:text-slate-100 flex-shrink-0">
                 {pct}%
               </span>
             </div>

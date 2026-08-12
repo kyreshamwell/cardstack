@@ -15,6 +15,114 @@
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
 import { supabaseAdmin } from '@/lib/supabase'
+import type { CreditCardLiability } from 'plaid'
+import { shouldKeepExistingLimit } from '@/lib/cards'
+
+type Connection = {
+  id: string
+  plaid_access_token: string
+  institution_name: string | null
+}
+
+type SyncResult =
+  | { ok: true; institution: string }
+  | { ok: false; institution: string; code: string; needsReauth: boolean }
+
+function errorCode(err: unknown): string {
+  const fromPlaid = (err as { response?: { data?: { error_code?: string } } })
+    ?.response?.data?.error_code
+  if (fromPlaid) return fromPlaid
+  return err instanceof Error ? err.message : 'UNKNOWN_ERROR'
+}
+
+async function syncConnection(conn: Connection, userId: string): Promise<SyncResult> {
+  const institution = conn.institution_name ?? 'Bank'
+
+  try {
+    // accountsBalanceGet — NOT accountsGet. accountsGet returns Plaid's cached
+    // copy of the balances, so hitting refresh would hand back the same stale
+    // numbers. accountsBalanceGet forces a live pull from the institution.
+    const balances = await plaidClient.accountsBalanceGet({
+      access_token: conn.plaid_access_token,
+    })
+
+    // Liabilities (due dates, minimum payments) is optional — not every
+    // institution supports it. A failure here must not lose the balances above.
+    const liabilities = new Map<string, CreditCardLiability>()
+    try {
+      const res = await plaidClient.liabilitiesGet({
+        access_token: conn.plaid_access_token,
+      })
+      for (const l of res.data.liabilities.credit ?? []) {
+        if (l.account_id) liabilities.set(l.account_id, l)
+      }
+    } catch {
+      // Institution doesn't expose Liabilities — balances still written below.
+    }
+
+    // Which of these cards carry a user-entered limit, so we don't overwrite it.
+    const { data: existing } = await supabaseAdmin
+      .from('cards')
+      .select('plaid_account_id, limit_is_manual')
+      .eq('connected_account_id', conn.id)
+      .eq('user_id', userId)
+
+    const manualLimit = new Set(
+      (existing ?? [])
+        .filter((c) => c.limit_is_manual && c.plaid_account_id)
+        .map((c) => c.plaid_account_id as string)
+    )
+
+    const syncedAt = new Date().toISOString()
+
+    // One write per account carrying balances and liabilities together.
+    // Previously this was two sequential writes per card, awaited in a loop.
+    await Promise.all(
+      balances.data.accounts.map((account) => {
+        const l = liabilities.get(account.account_id)
+        const keepLimit = shouldKeepExistingLimit(
+          account.balances.limit,
+          manualLimit.has(account.account_id)
+        )
+
+        return supabaseAdmin
+          .from('cards')
+          .update({
+            balance_current: account.balances.current,
+            balance_available: account.balances.available,
+            ...(keepLimit ? {} : { balance_limit: account.balances.limit }),
+            last_synced_at: syncedAt,
+            ...(l && {
+              due_date: l.next_payment_due_date ?? null,
+              minimum_payment: l.minimum_payment_amount ?? null,
+              last_payment_amount: l.last_payment_amount ?? null,
+              last_payment_date: l.last_payment_date ?? null,
+              is_overdue: l.is_overdue ?? false,
+              // What's actually owed to avoid interest. balance_current also
+              // includes post-statement charges, which aren't due yet.
+              statement_balance: l.last_statement_balance ?? null,
+              statement_date: l.last_statement_issue_date ?? null,
+            }),
+          })
+          .eq('plaid_account_id', account.account_id)
+          .eq('user_id', userId)
+      })
+    )
+
+    return { ok: true, institution }
+  } catch (err: unknown) {
+    const code = errorCode(err)
+    console.error(`Sync failed for connection ${conn.id} (${institution}): ${code}`)
+    return {
+      ok: false,
+      institution,
+      code,
+      // The user has to re-authenticate with the bank to fix this one —
+      // retrying the sync will never clear it.
+      needsReauth: code === 'ITEM_LOGIN_REQUIRED',
+    }
+  }
+}
 
 export async function POST() {
   const { userId } = await auth()
@@ -22,70 +130,33 @@ export async function POST() {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Fetch all connected accounts for this user
   const { data: connections, error: connectionsError } = await supabaseAdmin
     .from('connected_accounts')
-    .select('id, plaid_access_token')
+    .select('id, plaid_access_token, institution_name')
     .eq('user_id', userId)
 
   if (connectionsError || !connections) {
     return Response.json({ error: 'Failed to fetch connections' }, { status: 500 })
   }
 
-  // For each connection, fetch latest balances and liabilities from Plaid
-  let synced = 0
-  let failed = 0
+  // Connections sync in parallel. Serially, refresh time scaled with the number
+  // of connected banks — two Plaid round-trips each, one after another.
+  const results = await Promise.all(
+    connections.map((c) => syncConnection(c as Connection, userId))
+  )
 
-  for (const connection of connections) {
-    const accessToken = connection.plaid_access_token
+  const failures = results.filter(
+    (r): r is Extract<SyncResult, { ok: false }> => !r.ok
+  )
 
-    try {
-      // Update balances
-      const accountsResponse = await plaidClient.accountsGet({ access_token: accessToken })
-      for (const account of accountsResponse.data.accounts) {
-        await supabaseAdmin
-          .from('cards')
-          .update({
-            balance_current: account.balances.current,
-            balance_available: account.balances.available,
-            balance_limit: account.balances.limit,
-            last_synced_at: new Date().toISOString(),
-          })
-          .eq('plaid_account_id', account.account_id)
-          .eq('user_id', userId)
-      }
-
-      // Update due dates + payment info (if institution supports Liabilities)
-      try {
-        const liabilitiesResponse = await plaidClient.liabilitiesGet({ access_token: accessToken })
-        const creditLiabilities = liabilitiesResponse.data.liabilities.credit ?? []
-
-        for (const liability of creditLiabilities) {
-          await supabaseAdmin
-            .from('cards')
-            .update({
-              due_date: liability.next_payment_due_date ?? null,
-              minimum_payment: liability.minimum_payment_amount ?? null,
-              last_payment_amount: liability.last_payment_amount ?? null,
-              last_payment_date: liability.last_payment_date ?? null,
-              is_overdue: liability.is_overdue ?? false,
-            })
-            .eq('plaid_account_id', liability.account_id)
-            .eq('user_id', userId)
-        }
-      } catch {
-        // Institution doesn't support Liabilities — skip, balances already updated
-      }
-
-      synced++
-    } catch (err: unknown) {
-      // Token expired, item needs re-auth, or institution error — skip this connection
-      const status = (err as { response?: { data?: { error_code?: string } } })
-        ?.response?.data?.error_code
-      console.error(`Sync failed for connection ${connection.id}: ${status ?? 'unknown error'}`)
-      failed++
-    }
-  }
-
-  return Response.json({ success: true, synced, failed })
+  return Response.json({
+    synced: results.length - failures.length,
+    failed: failures.length,
+    syncedAt: new Date().toISOString(),
+    failures: failures.map((f) => ({
+      institution: f.institution,
+      code: f.code,
+      needsReauth: f.needsReauth,
+    })),
+  })
 }

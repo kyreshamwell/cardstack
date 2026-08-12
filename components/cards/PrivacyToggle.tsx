@@ -23,7 +23,7 @@ export function PrivacyToggle() {
     <button
       onClick={toggle}
       title={hidden ? 'Show balances' : 'Hide balances'}
-      className="flex items-center justify-center w-8 h-8 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+      className="flex items-center justify-center w-8 h-8 rounded-lg border border-line bg-ground text-ink-2 hover:bg-raised hover:text-ink transition-colors"
     >
       {hidden ? (
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

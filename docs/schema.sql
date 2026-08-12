@@ -83,3 +83,100 @@ alter table cards add column if not exists minimum_payment      numeric(12,2);
 alter table cards add column if not exists last_payment_amount  numeric(12,2);
 alter table cards add column if not exists last_payment_date    date;
 alter table cards add column if not exists is_overdue           boolean;
+
+-- statement balance — what you owe to avoid interest.
+-- Distinct from balance_current, which also includes charges made AFTER the
+-- statement closed (those belong to next month's statement, not this one).
+alter table cards add column if not exists statement_balance    numeric(12,2);
+alter table cards add column if not exists statement_date       date;
+
+-- ─── Transactions ────────────────────────────────────────────────────────────────
+-- Plaid's /transactions/sync is cursor-based: each call returns what changed
+-- since the cursor we last stored, so we never re-download the whole history.
+alter table connected_accounts add column if not exists transactions_cursor  text;
+alter table connected_accounts add column if not exists transactions_enabled boolean default false;
+
+create table if not exists transactions (
+  id                   uuid        primary key default uuid_generate_v4(),
+  user_id              text        not null,        -- Clerk user ID
+  card_id              uuid        references cards(id) on delete cascade,
+  plaid_transaction_id text        not null unique,  -- Plaid's stable transaction ID
+  plaid_account_id     text        not null,
+  name                 text        not null,        -- raw description from the bank
+  merchant_name        text,                        -- Plaid's cleaned-up merchant
+  -- Plaid sign convention: POSITIVE = money out (a purchase),
+  -- NEGATIVE = money in (a payment or refund).
+  amount               numeric(12,2) not null,
+  transaction_date     date        not null,
+  pending              boolean     default false,
+  category             text,                        -- personal_finance_category.primary
+  currency             text        default 'USD',
+  created_at           timestamptz default now()
+);
+
+alter table transactions enable row level security;
+
+create policy "Users see their own transactions"
+  on transactions for select
+  using (user_id = auth.jwt() ->> 'sub');
+
+create index if not exists transactions_user_idx on transactions (user_id);
+create index if not exists transactions_card_idx on transactions (card_id);
+create index if not exists transactions_date_idx on transactions (transaction_date desc);
+
+-- ─── Recurring charges ───────────────────────────────────────────────────────────
+-- Plaid detects recurring streams from transaction history (/transactions/recurring/get).
+-- We store the outflow streams — subscriptions and other repeating charges.
+-- Amounts arrive nested as { amount, iso_currency_code }, flattened here.
+create table if not exists recurring_charges (
+  id                  uuid        primary key default uuid_generate_v4(),
+  user_id             text        not null,
+  card_id             uuid        references cards(id) on delete cascade,
+  plaid_stream_id     text        not null unique,
+  plaid_account_id    text        not null,
+  description         text        not null,
+  merchant_name       text,
+  frequency           text,                        -- WEEKLY | BIWEEKLY | SEMI_MONTHLY | MONTHLY | ANNUALLY | UNKNOWN
+  average_amount      numeric(12,2),
+  last_amount         numeric(12,2),
+  last_date           date,
+  predicted_next_date date,
+  is_active           boolean     default true,
+  status              text,                        -- MATURE | EARLY_DETECTION | TOMBSTONED | UNKNOWN
+  category            text,
+  updated_at          timestamptz default now()
+);
+
+alter table recurring_charges enable row level security;
+
+create policy "Users see their own recurring charges"
+  on recurring_charges for select
+  using (user_id = auth.jwt() ->> 'sub');
+
+create index if not exists recurring_user_idx on recurring_charges (user_id);
+create index if not exists recurring_card_idx on recurring_charges (card_id);
+
+-- ─── Per-user state ──────────────────────────────────────────────────────────────
+-- Drives "what's new since you last looked". Compared against transactions.created_at
+-- (when WE first stored a row), not transaction_date — a charge dated last Tuesday
+-- that only synced today is still new *to you*.
+create table if not exists user_state (
+  user_id        text        primary key,
+  last_viewed_at timestamptz,
+  updated_at     timestamptz default now()
+);
+
+alter table user_state enable row level security;
+
+create policy "Users see their own state"
+  on user_state for select
+  using (user_id = auth.jwt() ->> 'sub');
+
+-- CSV-imported rows live in the same table as Plaid ones; source tells them apart.
+alter table transactions add column if not exists source text not null default 'plaid';
+
+-- Marks a credit limit the user typed in themselves. Plaid returns null for the
+-- limit on plenty of cards, and a sync that wrote that null straight through
+-- erased whatever the user had entered — every 30 minutes, once auto-refresh
+-- existed. When this is true, sync leaves balance_limit alone.
+alter table cards add column if not exists limit_is_manual boolean not null default false;

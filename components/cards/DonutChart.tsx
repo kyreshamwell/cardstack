@@ -37,7 +37,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
         <svg width="160" height="160" viewBox="0 0 160 160" className="overflow-visible">
           {/* Track */}
           <circle cx={cx} cy={cy} r={r} fill="none" strokeWidth="18"
-            className="stroke-slate-100 dark:stroke-slate-800" />
+            stroke="var(--raised)" />
 
           {slices.map((slice) => {
             const segmentLength = (slice.balance / totalBalance) * circumference
@@ -76,19 +76,19 @@ export function DonutChart({ slices, totalBalance }: Props) {
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           {hovered ? (
             <>
-              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide leading-none">
+              <p className="text-[10px] font-medium text-ink-3 uppercase tracking-wide leading-none">
                 {slices.find((s) => s.id === hovered)?.name.split(' ')[0]}
               </p>
-              <p className="sensitive-value mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
+              <p className="sensitive-value mt-0.5 text-base font-bold text-ink tnum leading-none">
                 {formatCurrency(slices.find((s) => s.id === hovered)?.balance ?? 0)}
               </p>
             </>
           ) : (
             <>
-              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wide leading-none">
+              <p className="text-[10px] font-medium text-ink-3 uppercase tracking-wide leading-none">
                 Total
               </p>
-              <p className="sensitive-value mt-0.5 text-base font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-none">
+              <p className="sensitive-value mt-0.5 text-base font-bold text-ink tnum leading-none">
                 {formatCurrency(totalBalance)}
               </p>
             </>
@@ -107,7 +107,7 @@ export function DonutChart({ slices, totalBalance }: Props) {
               onMouseLeave={() => setHovered(null)}
               onClick={() => focusCard(slice.id, slice.name)}
               className={`flex items-center justify-between rounded-lg px-2.5 py-2 transition-colors cursor-pointer ${
-                hovered === slice.id ? 'bg-slate-50 dark:bg-slate-800' : ''
+                hovered === slice.id ? 'bg-raised' : ''
               }`}
             >
               <div className="flex items-center gap-2 min-w-0">
@@ -115,9 +115,9 @@ export function DonutChart({ slices, totalBalance }: Props) {
                   className="h-2.5 w-2.5 rounded-full flex-shrink-0"
                   style={{ backgroundColor: slice.color }}
                 />
-                <span className="text-sm text-slate-600 dark:text-slate-300 truncate">{slice.name}</span>
+                <span className="text-sm text-ink-2 truncate">{slice.name}</span>
               </div>
-              <span className="sensitive-value ml-3 text-sm font-semibold text-slate-900 dark:text-slate-100 flex-shrink-0">
+              <span className="sensitive-value ml-3 text-sm font-semibold text-ink flex-shrink-0">
                 {pct}%
               </span>
             </div>

@@ -6,23 +6,44 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "test:all": "vitest run && playwright test"
   },
   "dependencies": {
+    "@base-ui/react": "^1.7.0",
     "@clerk/nextjs": "^6.12.12",
+    "@number-flow/react": "^0.6.2",
     "@supabase/supabase-js": "^2.106.2",
+    "@visx/group": "^4.0.1-alpha.0",
+    "@visx/responsive": "^4.0.1-alpha.0",
+    "@visx/shape": "^4.0.1-alpha.0",
+    "clsx": "^2.1.1",
+    "d3-shape": "^3.2.0",
+    "motion": "^13.1.0",
     "next": "^15.3.2",
     "plaid": "^42.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
-    "react-plaid-link": "^4.1.1"
+    "react-plaid-link": "^4.1.1",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.22",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.1.7",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.4",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.5",
+    "jsdom": "^29.1.1",
     "tailwindcss": "^4.1.7",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.10"
   }
 }

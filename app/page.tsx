@@ -1,7 +1,18 @@
+// app/page.tsx — the marketing page.
+//
+// Auth-aware: signed-in users never see this. They get sent straight to the
+// dashboard, so opening Cardstack lands in the app rather than on the pitch.
+// Signed-out visitors get the hero and the live demo.
+
 import Link from 'next/link'
+import { auth } from '@clerk/nextjs/server'
+import { redirect } from 'next/navigation'
 import { DemoDashboard } from '@/components/DemoDashboard'
 
-export default function Home() {
+export default async function Home() {
+  const { userId } = await auth()
+  if (userId) redirect('/dashboard')
+
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       {/* Nav */}

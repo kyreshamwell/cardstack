@@ -57,7 +57,7 @@ export function ConnectCardButton() {
       <button
         disabled
         title={tokenError}
-        className="rounded-lg bg-red-500/10 border border-red-500/30 px-3 py-2 text-sm font-medium text-red-500 cursor-not-allowed"
+        className="rounded-lg bg-critical-wash border border-critical/40 px-3 py-2 text-sm font-medium text-critical cursor-not-allowed"
       >
         Config error
       </button>
@@ -68,7 +68,7 @@ export function ConnectCardButton() {
     <button
       onClick={() => open()}
       disabled={!ready || isExchanging}
-      className="rounded-lg bg-slate-900 dark:bg-slate-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-slate-700 dark:hover:bg-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      className="rounded-lg bg-ink px-5 py-2.5 text-sm font-medium text-ground hover:opacity-90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
     >
       {isExchanging ? 'Connecting...' : 'Connect a card'}
     </button>

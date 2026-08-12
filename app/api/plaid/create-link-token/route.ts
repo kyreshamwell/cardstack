@@ -8,37 +8,74 @@
 //   Instead: your server creates a token → passes it to the browser →
 //   browser uses it to open Plaid Link. Token expires after 30 minutes.
 //
-// The user object tells Plaid which of YOUR users is connecting —
-// it uses the Clerk userId so Plaid's logs are traceable per user.
+// Two modes:
+//   - No body            → a normal link flow for connecting a NEW bank.
+//   - { connectionId }   → UPDATE MODE for an existing connection, used to
+//                          collect consent for Transactions on banks that were
+//                          linked before we asked for it. Update mode reuses the
+//                          same Item and access_token, so nothing is duplicated.
 
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
+import { supabaseAdmin } from '@/lib/supabase'
 import { Products, CountryCode } from 'plaid'
-// Products.Liabilities intentionally not used until Phase 2 (due dates + minimum payments)
 
-export async function POST() {
+export async function POST(request: Request) {
   const { userId } = await auth()
   if (!userId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // ConnectCardButton posts no body at all, so an empty parse is expected.
+  let connectionId: string | undefined
+  try {
+    const body = await request.json()
+    connectionId = body?.connectionId
+  } catch {
+    // no body — normal new-connection flow
+  }
+
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
   const isHttps = appUrl.startsWith('https://')
 
+  const base = {
+    user: { client_user_id: userId },
+    client_name: 'Cardstack',
+    country_codes: [CountryCode.Us],
+    language: 'en',
+    // Only send redirect_uri when running over HTTPS (Vercel).
+    // Plaid production rejects http:// — omitting it works fine for localhost.
+    ...(isHttps && { redirect_uri: `${appUrl}/dashboard` }),
+  }
+
   try {
+    // ── Update mode: add Transactions consent to an existing connection ────────
+    if (connectionId) {
+      const { data: connection, error } = await supabaseAdmin
+        .from('connected_accounts')
+        .select('plaid_access_token')
+        .eq('id', connectionId)
+        .eq('user_id', userId)
+        .single()
+
+      if (error || !connection) {
+        return Response.json({ error: 'Connection not found' }, { status: 404 })
+      }
+
+      const response = await plaidClient.linkTokenCreate({
+        ...base,
+        // In update mode you pass access_token and must NOT pass `products`.
+        access_token: connection.plaid_access_token,
+        additional_consented_products: [Products.Transactions],
+      })
+
+      return Response.json({ link_token: response.data.link_token })
+    }
+
+    // ── Normal mode: connect a new bank ───────────────────────────────────────
     const response = await plaidClient.linkTokenCreate({
-      user: {
-        client_user_id: userId,
-      },
-      client_name: 'Cardstack',
-      products: [Products.Liabilities],
-      country_codes: [CountryCode.Us],
-      language: 'en',
-      // Only send redirect_uri when running over HTTPS (Vercel).
-      // Plaid production rejects http:// — omitting it works fine for localhost.
-      ...(isHttps && {
-        redirect_uri: `${appUrl}/dashboard`,
-      }),
+      ...base,
+      products: [Products.Liabilities, Products.Transactions],
     })
 
     return Response.json({ link_token: response.data.link_token })

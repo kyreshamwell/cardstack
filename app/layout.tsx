@@ -23,6 +23,14 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: 'Cardstack',
   description: 'Your credit card command center.',
+  manifest: '/manifest.webmanifest',
+  // Lets iOS open the installed app standalone (no Safari chrome) and use
+  // "Cardstack" as the home-screen label instead of the page title.
+  appleWebApp: {
+    capable: true,
+    title: 'Cardstack',
+    statusBarStyle: 'default',
+  },
 }
 
 export default function RootLayout({

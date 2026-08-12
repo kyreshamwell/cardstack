@@ -3,41 +3,118 @@ import { supabaseAdmin } from '@/lib/supabase'
 import { ConnectCardButton } from '@/components/cards/ConnectCardButton'
 import { RefreshButton } from '@/components/cards/RefreshButton'
 import { AddManualCardButton } from '@/components/cards/AddManualCardButton'
-import { formatCurrency, calcUtilization, getDueDateStatus } from '@/lib/utils'
+import {
+  formatCurrency,
+  getDueDateStatus,
+  formatRelativeTime,
+  monthlyEquivalent,
+} from '@/lib/utils'
 import { getInstitutionInfo } from '@/lib/institutions'
+import { sortCardsForDisplay } from '@/lib/cards'
 import { PayCardButton } from '@/components/cards/PayCardButton'
 import { ManualLimitInput } from '@/components/cards/ManualLimitInput'
 import { RemoveCardButton } from '@/components/cards/RemoveCardButton'
 import { EditManualCardButton } from '@/components/cards/EditManualCardButton'
+import { BalancePie, type BalanceSlice } from '@/components/cards/BalancePie'
+import { RecentTransactions } from '@/components/cards/RecentTransactions'
+import { RecurringCharges } from '@/components/cards/RecurringCharges'
+import { BeforeStatementCloses } from '@/components/cards/BeforeStatementCloses'
+import { ImportCsvButton } from '@/components/cards/ImportCsvButton'
+import { MarkViewed } from '@/components/cards/MarkViewed'
+import { AutoRefresh } from '@/components/cards/AutoRefresh'
+import { EnableTransactionsButton } from '@/components/cards/EnableTransactionsButton'
+import { CardTile } from '@/components/cards/CardTile'
 import { CardFocusManager } from '@/components/cards/CardFocusManager'
-import { DonutChart, type ChartSlice } from '@/components/cards/DonutChart'
 
+// Card identity colors, validated for CVD separation in both themes.
+// Referenced as CSS vars so they re-step when the theme flips.
 const CARD_COLORS = [
-  '#6366f1',
-  '#8b5cf6',
-  '#06b6d4',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
+  'var(--s1)',
+  'var(--s2)',
+  'var(--s3)',
+  'var(--s4)',
+  'var(--s5)',
+  'var(--s6)',
 ]
 
 export default async function DashboardPage() {
   const { userId } = await auth()
 
-  const { data: cards } = await supabaseAdmin
-    .from('cards')
-    .select('*, connected_accounts(institution_name, institution_id)')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: true })
+  const [
+    { data: cards },
+    { data: transactions },
+    { data: connections },
+    { data: recurring },
+    { data: userState },
+  ] = await Promise.all([
+    supabaseAdmin
+      .from('cards')
+      .select('*, connected_accounts(institution_name, institution_id)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true }),
+    supabaseAdmin
+      .from('transactions')
+      .select(
+        'id, card_id, name, merchant_name, amount, transaction_date, pending, category, created_at'
+      )
+      .eq('user_id', userId)
+      .order('transaction_date', { ascending: false })
+      .limit(50),
+    supabaseAdmin
+      .from('connected_accounts')
+      .select('id, institution_name, transactions_enabled')
+      .eq('user_id', userId),
+    supabaseAdmin
+      .from('recurring_charges')
+      .select(
+        'id, card_id, description, merchant_name, frequency, average_amount, last_amount, predicted_next_date, status'
+      )
+      .eq('user_id', userId)
+      .eq('is_active', true),
+    supabaseAdmin
+      .from('user_state')
+      .select('last_viewed_at')
+      .eq('user_id', userId)
+      .maybeSingle(),
+  ])
 
   const allCards = cards ?? []
+  const allTransactions = transactions ?? []
+  const allRecurring = recurring ?? []
+  // Read before MarkViewed writes, so the "new" markers survive this render.
+  const lastViewedAt = userState?.last_viewed_at ?? null
 
+  // Only prompt for connections that actually hold cards. A connection with
+  // none is an orphan — a dead sandbox link, or a bank that was re-connected
+  // and left a stale row behind. It can never sync, so it would ask for consent
+  // forever and fail every time.
+  const connectionsWithCards = new Set(
+    allCards.map((c) => c.connected_account_id).filter(Boolean)
+  )
+  const needsTransactionsConsent = (connections ?? []).filter(
+    (c) => !c.transactions_enabled && connectionsWithCards.has(c.id)
+  )
+
+  const colorById: Record<string, string> = {}
+  const cardNameById: Record<string, string> = {}
+  allCards.forEach((c, i) => {
+    colorById[c.id] = CARD_COLORS[i % CARD_COLORS.length]
+    cardNameById[c.id] = c.name
+  })
+
+  // ── Totals ────────────────────────────────────────────────────────────────
   const totalBalance = allCards.reduce((s, c) => s + (c.balance_current ?? 0), 0)
+  const cardsWithStatement = allCards.filter((c) => c.statement_balance != null)
+  const totalStatement = cardsWithStatement.reduce(
+    (s, c) => s + (c.statement_balance ?? 0),
+    0
+  )
   const totalLimit = allCards
     .filter((c) => c.balance_limit != null)
     .reduce((s, c) => s + (c.balance_limit ?? 0), 0)
   const overallUtilization =
     totalLimit > 0 ? Math.round((totalBalance / totalLimit) * 100) : null
+
   const overdueCount = allCards.filter((c) => {
     if (!c.due_date || c.minimum_payment === 0) return false
     return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'overdue'
@@ -47,284 +124,244 @@ export default async function DashboardPage() {
     return getDueDateStatus(new Date(`${c.due_date}T12:00:00`)) === 'due-soon'
   }).length
 
-  // Every card gets a slice (even $0/no-balance ones) so every card has a
-  // clickable row in the left-panel legend — not just ones with a balance.
-  // Indexing off allCards (not a filtered subset) keeps colors in sync with colorById.
-  const chartSlices: ChartSlice[] = allCards.map((c, i) => ({
+  const syncTimes = allCards
+    .map((c) => c.last_synced_at)
+    .filter((t): t is string => Boolean(t))
+    .sort()
+  const lastSyncedAt = syncTimes.length ? syncTimes[syncTimes.length - 1] : null
+
+  const pieSlices: BalanceSlice[] = allCards.map((c) => ({
     id: c.id,
     name: c.name,
     balance: c.balance_current ?? 0,
-    color: CARD_COLORS[i % CARD_COLORS.length],
+    limit: c.balance_limit,
+    color: colorById[c.id],
   }))
 
-  const colorById: Record<string, string> = {}
-  allCards.forEach((c, i) => {
-    colorById[c.id] = CARD_COLORS[i % CARD_COLORS.length]
+  const recurringMonthly = allRecurring.reduce(
+    (s, c) => s + monthlyEquivalent(c.average_amount ?? 0, c.frequency),
+    0
+  )
+
+  const newSinceCount = lastViewedAt
+    ? allTransactions.filter(
+        (t) => t.created_at && new Date(t.created_at) > new Date(lastViewedAt)
+      ).length
+    : 0
+
+  if (allCards.length === 0) {
+    return (
+      <div className="h-full grid place-items-center">
+        <div className="text-center">
+          <p className="text-sm text-ink-2">No cards yet.</p>
+          <p className="mt-1 text-xs text-ink-3">
+            Connect a card through Plaid or add one manually.
+          </p>
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <AddManualCardButton />
+            <ConnectCardButton />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Highest utilization first, so whatever needs attention is at the top.
+  // Sorts render order only — colorById is keyed off the original creation
+  // order, so a card keeps its color as balances move.
+  const sortedCards = sortCardsForDisplay(allCards)
+
+  const cardList = sortedCards.map((card) => {
+    const institution = card.connected_accounts as {
+      institution_name: string
+      institution_id: string
+    } | null
+    const institutionName =
+      institution?.institution_name ?? card.institution_name ?? 'Credit card'
+    const info = getInstitutionInfo(institutionName)
+    const isManual = card.source === 'manual'
+
+    return (
+      <CardTile
+        key={card.id}
+        accent={colorById[card.id]}
+        card={{
+          id: card.id,
+          name: card.name,
+          institutionName,
+          mask: card.mask,
+          isManual,
+          balance_current: card.balance_current,
+          balance_available: card.balance_available,
+          balance_limit: card.balance_limit,
+          statement_balance: card.statement_balance,
+          statement_date: card.statement_date,
+          minimum_payment: card.minimum_payment,
+          due_date: card.due_date,
+        }}
+        limitControl={
+          isManual ? undefined : (
+            <ManualLimitInput cardId={card.id} currentLimit={card.balance_limit} />
+          )
+        }
+        actions={
+          <>
+            {info && (
+              <PayCardButton
+                webUrl={info.webUrl}
+                appScheme={info.appScheme}
+                accentColor={colorById[card.id]}
+              />
+            )}
+            {isManual && (
+              <EditManualCardButton
+                cardId={card.id}
+                cardName={card.name}
+                currentInstitution={card.institution_name ?? null}
+                currentBalance={card.balance_current}
+                currentLimit={card.balance_limit}
+                currentDueDate={card.due_date}
+                currentMinPayment={card.minimum_payment}
+              />
+            )}
+            <RemoveCardButton cardId={card.id} cardName={card.name} />
+          </>
+        }
+      />
+    )
   })
 
   return (
-    <div>
-      {/* ── Header ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-slate-100">Your Cards</h1>
-        <div className="flex items-center gap-2">
-          <RefreshButton />
-          <AddManualCardButton />
-          <ConnectCardButton />
+    <>
+      {/*
+        One composed page. Regions are separated by whitespace and a single
+        quiet label each — no boxes, no rules carving the page into cells.
+        Nothing scrolls except a list that genuinely outgrows its space.
+      */}
+      <div className="h-full min-h-0 grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-x-12 gap-y-8">
+
+        {/* ── Left: the numbers ─────────────────────────────────────────── */}
+        <aside className="flex flex-col min-h-0">
+          <p className="label">
+            {cardsWithStatement.length > 0 ? 'Statement balance' : 'Current balance'}
+          </p>
+          <p className="sensitive-value mt-2 text-[42px] font-semibold tracking-tight leading-none">
+            {formatCurrency(cardsWithStatement.length > 0 ? totalStatement : totalBalance)}
+          </p>
+          <p className="mt-2.5 text-xs text-ink-2">
+            {cardsWithStatement.length > 0 ? (
+              <>
+                <span className="sensitive-value">{formatCurrency(totalBalance)}</span> current
+                {' · '}
+              </>
+            ) : null}
+            <span className="sensitive-value">{formatCurrency(totalLimit)}</span> limit
+            {overdueCount > 0 ? (
+              <span className="text-critical font-medium"> · {overdueCount} overdue</span>
+            ) : dueSoonCount > 0 ? (
+              <span className="text-warning font-medium"> · {dueSoonCount} due soon</span>
+            ) : null}
+          </p>
+
+          <div className="mt-8">
+            <BalancePie slices={pieSlices} />
+          </div>
+
+          <div className="mt-9 flex flex-col min-h-0">
+            <p className="label mb-1">Pay before close</p>
+            <div className="scroll-y -mx-1 px-1">
+              <BeforeStatementCloses cards={allCards} colorById={colorById} />
+            </div>
+          </div>
+        </aside>
+
+        {/* ── Right: the lists ──────────────────────────────────────────── */}
+        <div className="flex flex-col min-h-0 gap-9">
+
+          <div className="flex flex-col min-h-0 max-h-[46%]">
+            <div className="flex items-center justify-between gap-4 mb-1">
+              <p className="label">Your cards</p>
+              <div className="flex items-center gap-1.5">
+                {lastSyncedAt && (
+                  <span className="text-[11px] text-ink-3 mr-1">
+                    Updated {formatRelativeTime(new Date(lastSyncedAt))}
+                  </span>
+                )}
+                <RefreshButton />
+                <ImportCsvButton cards={allCards.map((c) => ({ id: c.id, name: c.name }))} />
+                <AddManualCardButton />
+                <ConnectCardButton />
+              </div>
+            </div>
+
+            <div className="scroll-y -mx-1 px-1">
+              {/* Listens for ring-chart clicks and isolates that card */}
+              <CardFocusManager />
+              {cardList}
+
+              {needsTransactionsConsent.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-line">
+                  <p className="text-xs text-ink-2">
+                    Turn on transactions to see every charge. Your cards and balances
+                    stay exactly as they are.
+                  </p>
+                  <div className="mt-2.5 flex flex-wrap gap-2">
+                    {needsTransactionsConsent.map((c) => (
+                      <EnableTransactionsButton
+                        key={c.id}
+                        connectionId={c.id}
+                        institutionName={c.institution_name ?? 'this bank'}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="flex-1 min-h-0 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
+            <div className="flex flex-col min-h-0">
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <p className="label">Recent activity</p>
+                {newSinceCount > 0 && (
+                  <span className="text-[11px] font-medium text-s1">
+                    {newSinceCount} new
+                  </span>
+                )}
+              </div>
+              <div className="scroll-y -mx-1 px-1">
+                <RecentTransactions
+                  transactions={allTransactions}
+                  cardNameById={cardNameById}
+                  colorById={colorById}
+                  newSince={lastViewedAt}
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col min-h-0">
+              <div className="flex items-baseline justify-between gap-3 mb-1">
+                <p className="label">Recurring</p>
+                {allRecurring.length > 0 && (
+                  <span className="sensitive-value text-[11px] text-ink-3 tnum">
+                    {formatCurrency(recurringMonthly)}/mo
+                  </span>
+                )}
+              </div>
+              <div className="scroll-y -mx-1 px-1">
+                <RecurringCharges
+                  charges={allRecurring}
+                  cardNameById={cardNameById}
+                  colorById={colorById}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {allCards.length === 0 ? (
-        <div className="mt-16 text-center">
-          <p className="text-slate-500 dark:text-slate-400">No cards connected yet.</p>
-          <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-            Connect a card via Plaid or add one manually.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6 flex flex-col lg:flex-row gap-6 lg:items-start">
-
-          {/* ── Left panel ── */}
-          <div className="flex flex-col gap-4 lg:w-64 lg:flex-shrink-0">
-            <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
-                Balance breakdown
-              </p>
-              {totalBalance > 0 ? (
-                <DonutChart slices={chartSlices} totalBalance={totalBalance} />
-              ) : (
-                <p className="text-sm text-slate-400 text-center py-8">No balance data yet</p>
-              )}
-            </div>
-
-            <div className="hidden lg:block rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5">
-              <p className="text-xs font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-4">
-                Overview
-              </p>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Total balance</span>
-                  <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {formatCurrency(totalBalance)}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Total limit</span>
-                  <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {totalLimit > 0 ? formatCurrency(totalLimit) : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Utilization</span>
-                  <span className={`sensitive-value text-sm font-semibold ${
-                    overallUtilization == null ? 'text-slate-900 dark:text-slate-100'
-                    : overallUtilization >= 30 ? 'text-yellow-600'
-                    : 'text-emerald-600'
-                  }`}>
-                    {overallUtilization != null ? `${overallUtilization}%` : '—'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Alerts</span>
-                  <span className="text-sm font-semibold">
-                    {overdueCount > 0 ? (
-                      <span className="text-red-500">{overdueCount} overdue</span>
-                    ) : dueSoonCount > 0 ? (
-                      <span className="text-yellow-500">{dueSoonCount} due soon</span>
-                    ) : (
-                      <span className="text-emerald-500">All clear</span>
-                    )}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Cards</span>
-                  <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                    {allCards.length}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── Right: mobile summary + cards ── */}
-          <div className="flex-1 min-w-0">
-            <div className="grid grid-cols-2 gap-3 mb-5 lg:hidden">
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Balance</p>
-                <p className="sensitive-value mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
-                  {formatCurrency(totalBalance)}
-                </p>
-              </div>
-              <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">Utilization</p>
-                <p className={`sensitive-value mt-1 text-lg font-bold ${
-                  overallUtilization == null ? 'text-slate-900 dark:text-slate-100'
-                  : overallUtilization >= 30 ? 'text-yellow-600'
-                  : 'text-emerald-600'
-                }`}>
-                  {overallUtilization != null ? `${overallUtilization}%` : '—'}
-                </p>
-              </div>
-            </div>
-
-            {/* Cards grid */}
-            <CardFocusManager />
-            <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
-              {allCards.map((card) => {
-                const accentColor = colorById[card.id]
-                const utilization =
-                  card.balance_current != null && card.balance_limit != null
-                    ? calcUtilization(card.balance_current, card.balance_limit)
-                    : null
-
-                const availableCredit =
-                  card.balance_available ??
-                  (card.balance_limit != null && card.balance_current != null
-                    ? card.balance_limit - card.balance_current
-                    : null)
-
-                const dueDate = card.due_date ? new Date(`${card.due_date}T12:00:00`) : null
-                const dueDateStatus = dueDate ? getDueDateStatus(dueDate) : null
-
-                const institution = card.connected_accounts as {
-                  institution_name: string
-                  institution_id: string
-                } | null
-
-                const institutionName =
-                  institution?.institution_name ?? card.institution_name ?? 'Credit Card'
-                const institutionInfo = getInstitutionInfo(institutionName)
-                const payUrl = institutionInfo?.webUrl ?? null
-                const appScheme = institutionInfo?.appScheme
-                const isManual = card.source === 'manual'
-
-                const dueDateBadge = {
-                  overdue: 'bg-red-500/20 text-red-300 border-red-500/30',
-                  'due-soon': 'bg-yellow-400/20 text-yellow-300 border-yellow-400/30',
-                  upcoming: 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30',
-                }
-
-                const dueDateLabel =
-                  dueDateStatus === 'overdue' ? 'Overdue'
-                  : dueDateStatus === 'due-soon' ? 'Due soon'
-                  : dueDate
-                  ? `Due ${dueDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
-                  : null
-
-                return (
-                  <div
-                    key={card.id}
-                    id={`card-${card.id}`}
-                    data-card-id={card.id}
-                    className="rounded-2xl overflow-hidden shadow-sm border border-slate-200/60 dark:border-slate-700/40"
-                  >
-                    {/* Accent bar */}
-                    <div className="h-1" style={{ backgroundColor: accentColor }} />
-
-                    {/* Dark header — deeper gradient in both modes */}
-                    <div className="bg-gradient-to-br from-slate-900 to-black dark:from-black dark:to-slate-950 px-5 pt-4 pb-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-widest text-slate-500">
-                            {institutionName}
-                          </p>
-                          <p className="mt-0.5 text-base font-semibold text-white leading-tight">
-                            {card.name}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {isManual && (
-                            <EditManualCardButton
-                              cardId={card.id}
-                              cardName={card.name}
-                              currentInstitution={card.institution_name ?? null}
-                              currentBalance={card.balance_current}
-                              currentLimit={card.balance_limit}
-                              currentDueDate={card.due_date}
-                              currentMinPayment={card.minimum_payment}
-                            />
-                          )}
-                          <RemoveCardButton cardId={card.id} cardName={card.name} />
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <p className="text-xs text-slate-500 uppercase tracking-wide">Current balance</p>
-                        <p className="sensitive-value mt-0.5 text-3xl font-bold text-white tabular-nums">
-                          {card.balance_current != null ? formatCurrency(card.balance_current) : '—'}
-                        </p>
-                      </div>
-
-                      <div className="mt-3 flex items-center justify-between">
-                        <p className="font-mono text-sm tracking-widest text-slate-500">
-                          {card.mask ? `•••• ${card.mask}` : isManual ? 'Manual' : ''}
-                        </p>
-                        {dueDate && dueDateStatus && dueDateLabel && !(dueDateStatus === 'overdue' && card.minimum_payment === 0) && (
-                          <span className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${dueDateBadge[dueDateStatus]}`}>
-                            {dueDateLabel}
-                          </span>
-                        )}
-                      </div>
-
-                      {utilization != null && (
-                        <div className="mt-3 h-1 w-full rounded-full bg-white/10">
-                          <div
-                            className="h-1 rounded-full transition-all"
-                            style={{ width: `${Math.min(utilization, 100)}%`, backgroundColor: accentColor }}
-                          />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Stats — light in light mode, dark in dark mode */}
-                    <div className="bg-white dark:bg-slate-900 px-5 py-4 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Available</span>
-                        <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {availableCredit != null ? formatCurrency(availableCredit) : '—'}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-slate-500 dark:text-slate-400">Credit limit</span>
-                        {isManual ? (
-                          <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {card.balance_limit != null ? formatCurrency(card.balance_limit) : '—'}
-                          </span>
-                        ) : (
-                          <ManualLimitInput cardId={card.id} currentLimit={card.balance_limit} />
-                        )}
-                      </div>
-                      {utilization != null && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-500 dark:text-slate-400">Utilization</span>
-                          <span className="sensitive-value text-sm font-semibold" style={{ color: accentColor }}>
-                            {utilization}%
-                          </span>
-                        </div>
-                      )}
-                      {card.minimum_payment != null && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-slate-500 dark:text-slate-400">Min. payment</span>
-                          <span className="sensitive-value text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {formatCurrency(card.minimum_payment)}
-                          </span>
-                        </div>
-                      )}
-                      {payUrl && (
-                        <PayCardButton
-                          webUrl={payUrl}
-                          appScheme={appScheme}
-                          accentColor={accentColor}
-                        />
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <AutoRefresh lastSyncedAt={lastSyncedAt} />
+      <MarkViewed />
+    </>
   )
 }

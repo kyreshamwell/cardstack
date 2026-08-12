@@ -28,14 +28,14 @@ export function CardFocusManager() {
   if (!focusedName) return null
 
   return (
-    <div className="flex items-center justify-between mb-3 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 px-4 py-2.5">
-      <p className="text-sm text-slate-600 dark:text-slate-400">
+    <div className="flex items-center justify-between mb-3 rounded-xl bg-raised border border-line px-4 py-2.5">
+      <p className="text-sm text-ink-2">
         Showing{' '}
-        <span className="font-semibold text-slate-900 dark:text-slate-100">{focusedName}</span>
+        <span className="font-semibold text-ink">{focusedName}</span>
       </p>
       <button
         onClick={showAll}
-        className="text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300"
+        className="text-sm font-medium text-s1 hover:opacity-80"
       >
         Show all cards →
       </button>

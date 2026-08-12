@@ -1,37 +1,182 @@
 /*
  * globals.css — the single CSS entrypoint for the app.
  *
- * Tailwind 4 uses a CSS-first approach: there is no tailwind.config.ts.
- * Configuration (custom colors, fonts, etc.) lives here using @theme.
- * For now we just import the default Tailwind utilities.
+ * Tailwind 4 is CSS-first: there is no tailwind.config.ts. Design tokens live
+ * here.
+ *
+ * Theming works in two layers:
+ *   1. Raw semantic vars (--ground, --ink, …) redefined under .dark
+ *   2. @theme inline, which maps them to Tailwind utilities (bg-ground,
+ *      text-ink, …). `inline` makes Tailwind emit var() references rather than
+ *      resolved values, so the utilities follow the theme switch.
  */
 
 @import "tailwindcss";
-
-/* Class-based dark mode — toggle adds/removes .dark on <html> */
+/* Class-based dark mode — DarkModeToggle adds/removes .dark on <html> */
 @variant dark (&:where(.dark, .dark *));
 
-@theme {
-  /* Design tokens — we'll expand these as the card UI takes shape. */
-  --color-brand: #0f172a;      /* slate-900 — main navy */
-  --color-brand-light: #1e293b; /* slate-800 — card backgrounds */
-  --color-accent: #6366f1;     /* indigo-500 — utilization highlights */
-  --color-danger: #ef4444;     /* red-500 — overdue, high utilization */
-  --color-success: #22c55e;    /* green-500 — paid, low utilization */
+/* ─── Semantic tokens ─────────────────────────────────────────────────────── */
+
+:root {
+  color-scheme: light;
+
+  --ground: #ffffff;
+  --raised: #fafafa;      /* hover / inset wells */
+  --ink: #0a0a0a;
+  --ink-2: #5c5c5c;       /* secondary text */
+  --ink-3: #8a8a8a;       /* labels, axis, muted */
+  --line: #e4e4e4;        /* hairline borders */
+  --line-2: #d0d0d0;      /* emphasized borders */
+
+  /* Categorical card identity — validated against #ffffff on the adjacent
+     pairlist: worst CVD ΔE 9.1, normal-vision 19.6. Three slots sit under 3:1
+     contrast, so a swatch NEVER carries meaning alone — every one is rendered
+     beside the card's name. */
+  --s1: #2a78d6;
+  --s2: #eb6834;
+  --s3: #1baf7a;
+  --s4: #eda100;
+  --s5: #e87ba4;
+  --s6: #008300;
+
+  /* Status is reserved — never reused as a series color. */
+  --good: #0ca30c;
+  --warning: #fab219;
+  --critical: #d03b3b;
+  --good-wash: #e6f5e6;
+  --warning-wash: #fdf2d9;
+  --critical-wash: #f8e4e4;
+  --legend: oklch(1 0 0);
+  --legend-foreground: oklch(0.141 0.005 285.823);
+  --legend-muted: oklch(0.967 0.001 286.375);
+  --legend-muted-foreground: oklch(0.552 0.016 285.938);
+  --legend-track: oklch(0.92 0.004 286.32);
 }
 
-/* iOS safe-area — push content above home indicator */
+.dark {
+  color-scheme: dark;
+
+  --ground: #000000;      /* jet black */
+  --raised: #0e0e0e;
+  /* Not pure white: #fff on #000 causes halation — the text visibly smears.
+     This keeps the OLED black without the eye strain. */
+  --ink: #ededed;
+  --ink-2: #a0a0a0;
+  --ink-3: #6e6e6e;
+  --line: #232323;
+  --line-2: #333333;
+
+  /* Same six hues, re-stepped for the dark band and validated against #000000.
+     All pass and all clear 3:1 here — pure black gives more contrast headroom
+     than the light theme does. */
+  --s1: #3987e5;
+  --s2: #d95926;
+  --s3: #199e70;
+  --s4: #c98500;
+  --s5: #d55181;
+  --s6: #008300;
+
+  --good-wash: #0d2a0d;
+  --warning-wash: #33280a;
+  --critical-wash: #331111;
+  --legend: oklch(0.21 0.006 285.885);
+  --legend-foreground: oklch(0.985 0 0);
+  --legend-muted: oklch(0.274 0.006 286.033);
+  --legend-muted-foreground: oklch(0.705 0.015 286.067);
+  --legend-track: oklch(0.274 0.006 286.033);
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-raised: var(--raised);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-s3: var(--s3);
+  --color-s4: var(--s4);
+  --color-s5: var(--s5);
+  --color-s6: var(--s6);
+
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --color-good-wash: var(--good-wash);
+  --color-warning-wash: var(--warning-wash);
+  --color-critical-wash: var(--critical-wash);
+  --color-legend-track: var(--legend-track);
+  --color-legend-muted-foreground: var(--legend-muted-foreground);
+  --color-legend-muted: var(--legend-muted);
+  --color-legend-foreground: var(--legend-foreground);
+  --color-legend: var(--legend);
+}
+
+/* ─── Base ────────────────────────────────────────────────────────────────── */
+
+html,
 body {
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  background-color: #f8fafc; /* slate-50 — matches dashboard bg so overscroll matches */
-}
-@variant dark {
-  body {
-    background-color: #020617; /* slate-950 — matches dark dashboard bg */
-  }
+  height: 100%;
 }
 
-/* NavUserButton — Clerk trigger is invisible but covers the pill for clicks */
+body {
+  background-color: var(--ground);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  /* iOS safe-area — harmless on desktop */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Numbers that sit in columns line up; standalone display figures do not use
+   this — tabular digits make a large number look loose. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Panels ──────────────────────────────────────────────────────────────── */
+
+/*
+ * The page itself never scrolls. Where a list is longer than its space, that
+ * list scrolls on its own — quietly, with no boxes or dividers marking it off.
+ *
+ * min-height: 0 is the load-bearing part: a flex/grid child refuses to shrink
+ * below its content without it, and the whole page scrolls instead.
+ */
+.scroll-y {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Scrollbars stay out of the way — nothing here should read as a frame. */
+.scroll-y::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-y::-webkit-scrollbar-thumb {
+  background: var(--line-2);
+  border-radius: 999px;
+  border: 2px solid var(--ground);
+}
+.scroll-y::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Group label — the only chrome a region gets. */
+.label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* ─── Clerk overrides ─────────────────────────────────────────────────────── */
+
+/* NavUserButton — Clerk's trigger is invisible but covers the pill for clicks */
 .nav-user-pill .cl-userButtonTrigger {
   position: absolute !important;
   inset: 0 !important;
@@ -41,22 +186,21 @@ body {
   height: 100% !important;
 }
 
-/* Card highlight — triggered from DonutChart click to scroll-and-identify a card */
-@keyframes card-pulse {
-  0%   { box-shadow: 0 0 0 0px rgba(99, 102, 241, 0); }
-  20%  { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.55); }
-  100% { box-shadow: 0 0 0 4px rgba(99, 102, 241, 0); }
-}
-.card-highlight {
-  animation: card-pulse 1.6s ease-out forwards;
-}
+/* ─── Privacy mode ────────────────────────────────────────────────────────── */
 
-/* Privacy mode — blurs any element marked sensitive-value */
 .privacy-mode .sensitive-value {
   filter: blur(8px);
   user-select: none;
-  transition: filter 0.2s ease;
 }
 .sensitive-value {
   transition: filter 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

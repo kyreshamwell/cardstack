@@ -103,13 +103,73 @@ components/
 
 lib/
 ├── utils.ts                  # Pure utility functions (currency, utilization, due dates)
+├── cards.ts                  # Card ordering + the sync rule that protects manual limits
+├── csv.ts                    # Bank CSV parsing (quoted fields, amounts, dates)
 └── institutions.ts           # Bank name → payment URL / app-open link mapping
+
+tests/                        # Vitest — pure logic, API routes, components
+├── helpers/supabase-fake.ts  # Records queries so tenant scoping can be asserted
+├── api/                      # Route handlers: auth, isolation, sync correctness
+└── components/               # jsdom + Testing Library
+
+e2e/                          # Playwright — real browser, real server
 
 docs/
 ├── PRD.md                    # Product requirements
 ├── schema.sql                # Supabase table definitions
 └── decisions/                # Architecture decision records
 ```
+
+---
+
+## Testing
+
+```bash
+npm test          # unit + component (Vitest)
+npm run test:e2e  # browser (Playwright)
+npm run test:all  # everything
+```
+
+Three layers, each covering what the one below it structurally cannot.
+
+**Pure logic** — currency and utilization math, due-date boundaries, statement-close
+prediction, recurring-cadence conversion, and CSV parsing. Fast, no environment.
+
+**API routes** — run against a fake Supabase client that records every query.
+That design is deliberate: routes use the service-role key, which **bypasses RLS**,
+so tenant isolation rests entirely on each query carrying `.eq('user_id', …)`.
+Recording filters lets a test assert that directly. An in-memory database
+could not — a query missing the filter still returns rows.
+
+**Components (jsdom)** — prioritised by blast radius rather than visibility.
+`ImportCsvButton` first, because its sign toggle silently turns every purchase
+into a refund if it's wrong.
+
+**End-to-end (Playwright)** — that the app boots, that middleware actually
+redirects, and that the page renders without console errors. Signed-in tests
+live in `e2e/dashboard.spec.ts` and **skip until credentials are set**:
+
+```bash
+E2E_CLERK_USER_EMAIL=e2e@yourdomain.test
+E2E_CLERK_USER_PASSWORD=…
+```
+
+Create that user in Clerk and point it at a **seeded** Supabase project — not
+your own account, since a failing test could delete real cards.
+
+### Bugs these tests found
+
+Written after the features, and they still caught four real defects:
+
+| Bug | Consequence |
+|---|---|
+| `parseAmount('--5')` returned `5` | Malformed CSV silently imported as a real charge |
+| Sync wrote Plaid's `null` limit over a manual one | Wiped entered limits, blanking utilization everywhere |
+| CSV error never rendered on the picker | Choosing a bad file appeared to do nothing at all |
+| `daysUntil` measured hours, not calendar days | A card due today read "due tomorrow", then "overdue" after noon |
+
+The isolation and cursor assertions were mutation-tested — deliberately broken
+to confirm they fail — so they aren't passing vacuously.
 
 ---
 

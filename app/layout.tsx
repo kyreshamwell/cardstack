@@ -8,6 +8,8 @@
 
 import type { Metadata, Viewport } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
+import { Analytics } from '@vercel/analytics/next'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 
@@ -93,6 +95,12 @@ export default function RootLayout({
             left a white page behind the app in dark mode. */}
         <body className={`${inter.className} bg-ground text-ink antialiased`}>
           {children}
+          {/* Both last inside <body> so neither delays rendering the page
+              they measure. Analytics reports page views and traffic;
+              SpeedInsights reports real-user Core Web Vitals. Each only
+              collects on a Vercel deployment, so both are inert locally. */}
+          <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

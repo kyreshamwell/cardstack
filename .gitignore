@@ -21,6 +21,11 @@
 *.tsbuildinfo
 next-env.d.ts
 
+# ── Personal notes ───────────────────────────────────────────────────────────────
+# Working lists and learning notes. Useful to keep locally, not useful to anyone
+# cloning the repo — the durable "how and why" lives in docs/ARCHITECTURE.md.
+/docs/private/
+
 # ── Misc ─────────────────────────────────────────────────────────────────────────
 .DS_Store
 *.pem

@@ -67,3 +67,28 @@ export function shouldKeepExistingLimit(
 ): boolean {
   return limitIsManual || plaidLimit == null
 }
+
+/**
+ * Card identity colors, validated for CVD separation in both themes.
+ *
+ * Referenced as CSS vars so they re-step when the theme flips. Lives here
+ * rather than in the dashboard page because the public demo assigns the same
+ * colors from the same list — two copies would drift apart silently.
+ */
+export const CARD_COLORS = [
+  'var(--s1)',
+  'var(--s2)',
+  'var(--s3)',
+  'var(--s4)',
+  'var(--s5)',
+  'var(--s6)',
+]
+
+/** Assigns each card its identity color by creation order. */
+export function colorsByCardId(ids: string[]): Record<string, string> {
+  const map: Record<string, string> = {}
+  ids.forEach((id, i) => {
+    map[id] = CARD_COLORS[i % CARD_COLORS.length]
+  })
+  return map
+}

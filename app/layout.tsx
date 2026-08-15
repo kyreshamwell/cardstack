@@ -33,6 +33,21 @@ export const metadata: Metadata = {
   },
 }
 
+// No Clerk `appearance` prop here on purpose.
+//
+// This used to carry a slate palette — `card: 'shadow-lg border
+// border-slate-100'`, `colorBackground: '#ffffff'`, and friends — left over
+// from before the redesign. Two problems with it:
+//
+//   1. It rendered a bordered, shadowed card INSIDE the card AuthPanel draws,
+//      so every auth form had a second white box sitting a pixel or two proud
+//      of the fields. That was the pale edge down the left of the inputs.
+//   2. `variables` take concrete hex colours, so the form was pinned to the
+//      light theme no matter what the rest of the app was doing.
+//
+// Clerk is themed in globals.css against its stable `cl-*` classes instead,
+// which resolve our CSS custom properties and therefore follow dark mode.
+// Anything added back here overrides that, so don't.
 export default function RootLayout({
   children,
 }: {
@@ -40,32 +55,43 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
-      appearance={{
-        variables: {
-          // These CSS variables override Clerk's default design tokens.
-          // Change these to match whatever brand direction you want.
-          colorPrimary: '#0f172a',        // buttons, active states (slate-900)
-          colorBackground: '#ffffff',     // card/modal background
-          colorInputBackground: '#f8fafc', // input fields (slate-50)
-          colorText: '#0f172a',           // body text
-          borderRadius: '0.5rem',         // rounded corners on inputs + buttons
-          fontFamily: 'inherit',          // use whatever font the rest of the app uses
-        },
-        elements: {
-          // Target individual Clerk elements with custom Tailwind-style classes.
-          // Full list of element keys: https://clerk.com/docs/customization/elements
-          card: 'shadow-lg border border-slate-100',
-          formButtonPrimary: 'bg-slate-900 hover:bg-slate-700 text-sm',
-          footerActionLink: 'text-slate-900 hover:text-slate-600',
-          // iOS Safari auto-zooms the viewport when a focused input's font-size
-          // is under 16px, and that zoom can persist after redirecting to the
-          // dashboard post-sign-in. Keeping this at 16px+ stops the zoom at the source.
-          formFieldInput: 'text-base',
-        },
+      // `localization`, not `appearance` — this is copy, not styling, so it
+      // doesn't reintroduce the global override problem described above.
+      //
+      // With a single provider Clerk labels the button "Continue with Google";
+      // with two or more it falls back to just the provider name. "Apple" on
+      // its own reads as a label rather than an action, so the long form is
+      // restored explicitly.
+      // Both keys: Clerk uses `socialButtonsBlockButton` when one provider is
+      // shown and `...ManyInView` when several are, and only the first has the
+      // long form by default. Setting just the one leaves the labels reading
+      // "Apple" and "Google" the moment a second provider is enabled.
+      localization={{
+        socialButtonsBlockButton: 'Continue with {{provider|titleize}}',
+        socialButtonsBlockButtonManyInView: 'Continue with {{provider|titleize}}',
       }}
     >
-      <html lang="en">
-        <body className={`${inter.className} bg-white text-slate-900 antialiased`}>
+      <html lang="en" suppressHydrationWarning>
+        <head>
+          {/*
+            Runs before first paint, deliberately blocking.
+            DarkModeToggle applies the theme in an effect, which is too late —
+            the browser has already painted a white page, so anyone on a dark
+            device got a white flash on every single load. This reads the same
+            two sources the toggle does (saved choice first, device preference
+            otherwise) and stamps the class on <html> before anything renders.
+            suppressHydrationWarning above is required because this mutates the
+            element React is about to hydrate.
+          */}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `(function(){try{var s=localStorage.getItem('theme');var d=s?s==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.classList.toggle('dark',d)}catch(e){}})()`,
+            }}
+          />
+        </head>
+        {/* Tokens, not fixed colours — the old bg-white/text-slate-900 pair
+            left a white page behind the app in dark mode. */}
+        <body className={`${inter.className} bg-ground text-ink antialiased`}>
           {children}
         </body>
       </html>

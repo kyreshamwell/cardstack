@@ -1,3 +1,19 @@
+// components/cards/PayCardButton.tsx
+//
+// Sends you to the bank to actually pay — their app on a phone, their website
+// otherwise.
+//
+// The OS gives no reliable answer to "is this app installed", so opening the
+// app scheme and falling back on a timer is the standard approach: if the app
+// opens the tab loses focus and the fallback is cancelled; if nothing happens
+// the timer fires and the website loads.
+//
+// Device detection is by user agent, not viewport width — a narrow desktop
+// window is not a phone and has no app to open.
+//
+// NOTE: the demo renders a dead lookalike instead of this. Sending a sample
+// visitor to a real bank from fixture data isn't ours to do.
+
 'use client'
 
 import { useEffect, useState } from 'react'

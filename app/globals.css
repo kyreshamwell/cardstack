@@ -117,17 +117,38 @@
 
 /* ─── Base ────────────────────────────────────────────────────────────────── */
 
+/*
+ * `min-height`, not `height`.
+ *
+ * Correct back when every page was a fixed viewport. Now that phones scroll the
+ * document, `height: 100%` pins the body to exactly one screen while its
+ * content carries on past it — the box ends at the fold.
+ */
 html,
 body {
-  height: 100%;
+  min-height: 100%;
 }
 
 body {
   background-color: var(--ground);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
-  /* iOS safe-area — harmless on desktop */
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/*
+ * The iOS bottom inset belongs INSIDE the app shell, not on <body>.
+ *
+ * The shell is a child of body, so an inset applied to body puts that strip
+ * outside the shell's background — on a notched iPhone the home-indicator area
+ * is then painted by the browser canvas rather than by the app. It also made
+ * body `viewport + inset` tall, which is a permanent few pixels of scroll on
+ * pages that should fit exactly.
+ *
+ * Held by the shell instead, the strip is the app's own background and content
+ * clears the home indicator.
+ */
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
 }
 
 /* Numbers that sit in columns line up; standalone display figures do not use
@@ -165,6 +186,53 @@ body {
   background: transparent;
 }
 
+/*
+ * Neutralises nested scrolling inside a container that scrolls itself.
+ *
+ * The dashboard's regions each scroll independently on desktop, which is right
+ * when they're sized as fractions of a fixed viewport. On a phone they're
+ * stacked inside one scrolling tab panel, and a scroller inside a scroller is
+ * what makes a swipe you meant for the page get eaten by a list instead —
+ * `overscroll-behavior: contain` on `.scroll-y` actively makes that worse.
+ * Inside `.flow-scroll` the regions just lay out at their natural height and
+ * the panel does all the scrolling.
+ */
+.flow-scroll .scroll-y {
+  flex: none;
+  overflow: visible;
+  overscroll-behavior: auto;
+  /*
+   * Also undo the `-mx-1 px-1` pair. That exists so a region's scrollbar can
+   * hang outside its content while the rows stay flush — but with no inner
+   * scrollbar here there's nothing to make room for, and the negative margin
+   * just pushes every row 4px past the panel's right edge. Measured: content
+   * reaching 367px inside a 363px panel.
+   */
+  margin-left: 0;
+  margin-right: 0;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/*
+ * The filmstrip is a desktop device only.
+ *
+ * Below xl the panels are hidden rather than translated (see Panel), so the
+ * track must not carry a transform — with one panel in flow, translating by
+ * -100% per index would simply push it off screen. `!important` because Motion
+ * writes the transform inline.
+ *
+ * They're hidden rather than height-capped because a `max-height` percentage
+ * can't resolve against an auto-height parent: the off-screen dashboard kept
+ * contributing its full height and gave the landing page a screenful of empty
+ * scroll underneath it.
+ */
+@media (max-width: 1279px) {
+  .filmstrip-track {
+    transform: none !important;
+  }
+}
+
 /* Group label — the only chrome a region gets. */
 .label {
   font-size: 10.5px;
@@ -172,6 +240,271 @@ body {
   letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--ink-3);
+}
+
+/* ─── Clerk auth forms ────────────────────────────────────────────────────── */
+
+/*
+ * Themed in CSS, not through `appearance.elements`.
+ *
+ * The elements API silently dropped every class we passed — Clerk rendered its
+ * own `cl-*` classes with none of ours alongside them. The `cl-*` names are
+ * stable and documented for exactly this, and styling through them has a real
+ * advantage here: our colours are CSS custom properties that re-step under
+ * `.dark`, so the form follows the theme switch for free. The variables API
+ * wants concrete colours to derive shades from and would freeze one theme in.
+ *
+ * `!important` throughout because Clerk injects its stylesheet at runtime,
+ * after this file, and its rules are the same specificity as ours.
+ */
+
+/*
+ * Clerk's card chrome is removed entirely — AuthPanel supplies the card.
+ *
+ * `min-width: 0` on every one of these is the important part. Clerk's boxes
+ * carry an intrinsic minimum width, so inside a narrower container they refuse
+ * to shrink: the form overflowed the card, the field labels were sliced off at
+ * the left edge, and cardBox's own shadow drew a second rounded rectangle
+ * across ours. Width alone doesn't fix it — the minimum has to be released too.
+ */
+.cl-rootBox,
+.cl-cardBox,
+.cl-card,
+.cl-main,
+.cl-form,
+.cl-footer,
+.cl-socialButtons {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.cl-cardBox {
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  /* Clerk sets `overflow: hidden` here, which made sense when this box drew
+     its own rounded card. We've stripped that chrome, and it was slicing the
+     "Last used" pill in half where it overhangs a provider button. */
+  overflow: visible !important;
+}
+
+.cl-card {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  gap: 1rem !important;
+}
+
+/* The name row is Clerk's only two-column layout and the first thing to break
+   when space is tight. */
+.cl-formFieldRow {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.cl-formField {
+  min-width: 0 !important;
+}
+
+/* Both replaced by our own heading and footer link, so Clerk's would be a
+   second copy of each. Hiding the footer also drops the "Secured by Clerk"
+   and development-mode badges. */
+.cl-header,
+.cl-footer {
+  display: none !important;
+}
+
+.cl-formFieldLabel {
+  color: var(--ink-2) !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+.cl-formFieldInput,
+.cl-input,
+.cl-otpCodeFieldInput {
+  /* Same surface as the provider buttons, for the same reason. */
+  background: var(--raised) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 0.75rem !important;
+  color: var(--ink) !important;
+  /* 16px exactly: anything smaller and Safari zooms the viewport on focus. */
+  font-size: 16px !important;
+  height: 2.75rem !important;
+  /*
+   * Clerk draws its field outline as a box-shadow ring (`0 0 0 1px`) plus a
+   * soft drop shadow. Ours is a real border, so leaving Clerk's in place
+   * stacked two outlines a pixel apart and read as a pale halo down the edge
+   * of every input — most visible on the left, against the card's white.
+   * One outline only.
+   */
+  box-shadow: none !important;
+}
+.cl-formFieldInputGroup {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+/*
+ * Clerk hardcodes the placeholder to a dark slate at 65% opacity, and it does
+ * not follow the theme — on the dark card that's near-black text on a
+ * near-black field. `opacity: 1` matters as much as the colour: without it the
+ * browser's own placeholder fade stacks on top and mutes it again.
+ */
+.cl-formFieldInput::placeholder,
+.cl-input::placeholder {
+  color: var(--ink-3) !important;
+  opacity: 1 !important;
+}
+
+.cl-formFieldInput:focus,
+.cl-formFieldInput:focus-visible,
+.cl-input:focus,
+.cl-input:focus-visible {
+  border-color: var(--ink-3) !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.cl-formButtonPrimary {
+  background: var(--ink) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+  color: var(--ground) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  height: 2.75rem !important;
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+.cl-formButtonPrimary:hover {
+  opacity: 0.9 !important;
+}
+
+/* Google and Apple. Stacked full-width rather than side by side: two of them
+   sit comfortably, and a row of icon-only buttons makes people guess. */
+.cl-socialButtons {
+  display: grid !important;
+  gap: 0.5rem !important;
+  grid-template-columns: 1fr !important;
+}
+.cl-socialButtonsBlockButton,
+.cl-socialButtonsIconButton {
+  /* `raised` on a `ground` card — see the note in AuthPanel for why this
+     direction and not the reverse. The border does most of the work in light
+     mode, where raised-on-ground is only a 2% step, and all but disappears in
+     dark, where the fill alone already separates them. */
+  background: var(--raised) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: none !important;
+  color: var(--ink) !important;
+  height: 2.75rem !important;
+  width: 100% !important;
+  /* Laid out here rather than trusting Clerk's internals: the mark and the
+     label have to travel as one centred unit, or the logo drifts to the far
+     edge while the text stays centred. */
+  align-items: center !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: center !important;
+}
+.cl-socialButtonsBlockButton:hover,
+.cl-socialButtonsIconButton:hover {
+  background: var(--raised) !important;
+  border-color: var(--line-2) !important;
+}
+.cl-socialButtonsBlockButtonText {
+  color: var(--ink) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+}
+/* Provider marks are brand assets, so they're only sized here, not recoloured. */
+.cl-socialButtonsProviderIcon {
+  height: 1.125rem !important;
+  width: 1.125rem !important;
+}
+
+/*
+ * Apple's mark is the exception. Clerk serves these as <img> from its CDN
+ * rather than inline SVG, so they can't inherit currentColor — and Apple's is
+ * a solid black glyph, which is simply invisible on a black button in dark
+ * mode. Inverting turns it white, which is also what Apple's own branding
+ * guidance calls for on dark backgrounds.
+ *
+ * Scoped to Apple deliberately: Google's mark is multicolour and inverting it
+ * would produce colours that aren't Google's.
+ */
+.dark .cl-socialButtonsProviderIcon__apple,
+.dark .cl-providerIcon__apple {
+  filter: invert(1) !important;
+}
+
+/*
+ * The "Last used" pill Clerk hangs off whichever provider you signed in with
+ * most recently. Untouched it renders as a hard white block half-overlapping
+ * the button's top-right corner — very visible on a dark card, and the thing
+ * that looked like a broken border. Positioned relative + overflow visible on
+ * the button so it isn't sliced, and recoloured to the theme.
+ */
+.cl-socialButtonsBlockButton {
+  overflow: visible !important;
+  position: relative !important;
+}
+.cl-badge {
+  background: var(--raised) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 999px !important;
+  box-shadow: none !important;
+  color: var(--ink-2) !important;
+  font-size: 10px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  padding: 1px 6px !important;
+  text-transform: none !important;
+}
+
+.cl-dividerRow {
+  align-items: center !important;
+  display: flex !important;
+  gap: 0.75rem !important;
+  /* Breathing room on both sides — butted against the provider buttons it
+     reads as part of them rather than as a separator. */
+  margin: 0.875rem 0 !important;
+}
+.cl-dividerLine {
+  background: var(--line) !important;
+  flex: 1 !important;
+  height: 1px !important;
+}
+.cl-dividerText {
+  color: var(--ink-3) !important;
+  font-size: 0.75rem !important;
+  white-space: nowrap !important;
+}
+
+.cl-formFieldInputShowPasswordButton {
+  color: var(--ink-3) !important;
+}
+.cl-formFieldAction,
+.cl-formResendCodeLink,
+.cl-identityPreviewEditButton {
+  color: var(--s1) !important;
+}
+.cl-formFieldErrorText,
+.cl-alertText__error {
+  color: var(--critical) !important;
+}
+.cl-identityPreview {
+  background: var(--raised) !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 0.75rem !important;
+}
+.cl-identityPreviewText,
+.cl-spinner {
+  color: var(--ink) !important;
 }
 
 /* ─── Clerk overrides ─────────────────────────────────────────────────────── */
@@ -184,6 +517,18 @@ body {
   border-radius: 9999px;
   width: 100% !important;
   height: 100% !important;
+}
+
+/* ─── Typewriter caret ────────────────────────────────────────────────────── */
+
+/* A CSS animation rather than a JS one: it runs on the compositor and costs
+   nothing, and it must not be driven by the same timers as the typing. */
+@keyframes caret-blink {
+  0%, 45% { opacity: 1; }
+  55%, 100% { opacity: 0; }
+}
+.caret-blink {
+  animation: caret-blink 1s steps(1, end) infinite;
 }
 
 /* ─── Privacy mode ────────────────────────────────────────────────────────── */

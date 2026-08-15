@@ -11,8 +11,17 @@ import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 
 const isPublicRoute = createRouteMatcher([
   '/',
+  // The demo runs entirely on fixture data and touches no account, so it stays
+  // open — that's the point of it. It's also the only route that renders the
+  // real dashboard without credentials, which is what makes it testable.
+  '/demo',
   '/sign-in(.*)',
   '/sign-up(.*)',
+  // Where Google and Apple redirect back to. It has to be public: at the
+  // moment the browser lands here the session does not exist yet — that's the
+  // whole point of the page — so protecting it would bounce the user to
+  // /sign-in and lose the OAuth response in the URL.
+  '/sso-callback',
 ])
 
 export default clerkMiddleware(async (auth, request) => {

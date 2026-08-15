@@ -1,3 +1,12 @@
+// tests/csv.test.ts
+//
+// Bank CSV parsing — the highest-consequence pure logic in the project.
+//
+// Getting the sign convention backwards doesn't throw or warn: it silently
+// imports every purchase as a refund and understates what you owe. The parser
+// also has to survive real bank exports, which means quoted fields containing
+// commas, inconsistent date formats, and rows that are simply unreadable.
+//
 import { describe, expect, it } from 'vitest'
 import { parseCsv, parseAmount, parseDate, guessColumn, COLUMN_HINTS } from '@/lib/csv'
 

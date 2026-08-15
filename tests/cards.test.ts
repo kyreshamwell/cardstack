@@ -1,3 +1,11 @@
+// tests/cards.test.ts
+//
+// Display order and the sync rule that protects a manually entered credit
+// limit. Both encode decisions that were wrong once already: cards used to sort
+// by name (which buries the one hurting your score), and a Plaid sync used to
+// write its own `null` limit over a value you had typed in, blanking
+// utilization everywhere it appeared.
+//
 import { describe, expect, it } from 'vitest'
 import { rankCard, sortCardsForDisplay, shouldKeepExistingLimit } from '@/lib/cards'
 

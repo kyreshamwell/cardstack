@@ -254,7 +254,7 @@ export function ImportCsvButton({ cards }: Props) {
                     {sample.description}
                   </span>
                   <span
-                    className={`shrink-0 font-semibold tabular-nums ${
+                    className={`sensitive-value shrink-0 font-semibold tabular-nums ${
                       sample.amount < 0
                         ? 'text-good'
                         : 'text-ink'

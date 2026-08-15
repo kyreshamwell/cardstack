@@ -1,7 +1,8 @@
 # Cardstack — Product Requirements Document
-**Version:** 1.0  
-**Status:** Planning  
+**Version:** 1.1  
+**Status:** Phase 1 built, not yet deployed  
 **Owner:** Kyre  
+**Last updated:** 2026-08-14  
 
 ---
 
@@ -23,15 +24,27 @@ Engineers and hiring managers in fintech (Cap One, JP Morgan, DTCC) who want to 
 
 ## Scope
 
-### Phase 1 — MVP (Core dashboard)
-- Auth (Clerk)
-- Connect cards via Plaid
-- Balance + available credit per card
-- Due dates + payment status
-- Quick link to pay each card
-- Credit utilization per card
+### Phase 1 — MVP (Core dashboard) — **built**
+- [x] Auth (Clerk) — email, plus Google and Apple
+- [x] Connect cards via Plaid, or add them manually
+- [x] Balance + available credit per card
+- [x] Due dates + payment status
+- [x] Quick link to pay each card
+- [x] Credit utilization per card
+- [x] Transactions and detected recurring charges
+- [x] CSV import for cards Plaid can't reach
+- [x] Public demo at `/demo` — the real dashboard on fixture data
+- [x] Privacy mode, dark mode, phone layout
+
+**Not done, and blocking real users:**
+- [ ] Reads still use the Supabase service-role key, bypassing RLS
+- [ ] Plaid is still in sandbox
+- [ ] Clerk is still a development instance
+- [ ] No background sync — data only refreshes while the app is open
 
 ### Phase 2 — Budgeting layer
+- Spending by category — **the data is already stored on every transaction,
+  this view was deferred and never built**
 - Monthly spend by category
 - Budget limits per category
 - Savings goal calculator
@@ -70,9 +83,13 @@ Unit tests for utility functions (date formatting, balance math, utilization cal
 Feature branches off main. PRs with a short description of what changed and why. Conventional commits (`feat:`, `fix:`, `chore:`). Tags for version releases.
 
 ### Documentation
-- `DEVLOG.md` updated each session with what was built, decided, and learned
+- `README.md` covers setup, env vars, scripts, and Plaid sandbox
+- `docs/ARCHITECTURE.md` covers how the app fits together and why, including
+  approaches that were tried and abandoned
 - Architecture decisions recorded in `/docs/decisions/`
-- README covers setup, env vars, and Plaid sandbox instructions
+- `DEVLOG.md` logs what was built and decided each session
+- Every source file carries a header comment explaining its job — those are the
+  primary documentation; the docs above are the map
 
 ### Security
 Plaid access tokens stored encrypted in Supabase, never exposed to the client. RLS policies so users only ever see their own data. All sensitive operations run server-side.
@@ -87,16 +104,16 @@ Plaid access tokens stored encrypted in Supabase, never exposed to the client. R
 | Plaid environment | Sandbox first, then development mode for real accounts |
 | Supabase uptime | Cron ping to prevent inactivity pause on free tier |
 | Scope creep | No investment tracking, no bank account aggregation in MVP |
-| Timeline | MVP live before portfolio goes up (targeting July 2026) |
+| Timeline | MVP built; deployment pending (originally targeted July 2026) |
 
 ---
 
 ## Success Metrics
 
-- Card dashboard live and deployed on Vercel
-- Core user flows covered with tests end-to-end
-- Case study written for portfolio
-- Can walk through every architectural decision in an interview
+- [ ] Card dashboard live and deployed on Vercel
+- [x] Core user flows covered with tests end-to-end
+- [ ] Case study written for portfolio
+- [x] Can walk through every architectural decision in an interview
 
 ---
 

@@ -1,3 +1,13 @@
+// components/NavUserButton.tsx
+//
+// The account pill in the signed-in nav.
+//
+// Clerk's <UserButton /> brings its own trigger, which doesn't match anything
+// else here. Rather than fight its internals, this draws the pill we want —
+// initials, first name, chevron — and lays Clerk's real button over it,
+// invisible and filling the whole pill, so Clerk still owns the click and the
+// popover. The visible parts are `pointer-events-none` so they never intercept.
+
 'use client'
 
 import { useUser, UserButton } from '@clerk/nextjs'

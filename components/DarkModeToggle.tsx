@@ -1,3 +1,14 @@
+// components/DarkModeToggle.tsx
+//
+// Light/dark switch, shown on every public panel and in the signed-in app.
+//
+// It does NOT decide the initial theme — a blocking script in the root layout
+// does that before first paint, reading the same two sources in the same order
+// (a saved choice, else the device preference). Deciding it here would mean a
+// white flash on every load for anyone on a dark device. This only syncs
+// React's copy of the state so the icon matches, applies a manual choice, and
+// keeps following the OS while no manual choice exists.
+
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -11,16 +22,21 @@ function getSystemPreference(): Mode {
 
 function applyMode(mode: Mode) {
   document.documentElement.classList.toggle('dark', mode === 'dark')
-  // Keep Safari's top bar in sync with the app's dark mode (not system preference)
+  // Keep Safari's top bar in sync with the app's dark mode (not the system
+  // preference). #000000 because that's what --ground is in the dark theme —
+  // this used to be the old slate #0f172a, so the browser chrome and the page
+  // it framed were visibly different blacks.
   const meta = document.querySelector('meta[name="theme-color"]')
-  if (meta) meta.setAttribute('content', mode === 'dark' ? '#0f172a' : '#ffffff')
+  if (meta) meta.setAttribute('content', mode === 'dark' ? '#000000' : '#ffffff')
 }
 
 export function DarkModeToggle() {
   const [mode, setMode] = useState<Mode>('light')
 
   useEffect(() => {
-    // On mount: check localStorage first, fall back to system preference
+    // The class is already correct — the blocking script in the root layout set
+    // it before paint. This only syncs React's copy of the state so the icon
+    // matches, and re-applies to cover the theme-color meta tag.
     const saved = localStorage.getItem('theme') as Mode | null
     const initial = saved ?? getSystemPreference()
     setMode(initial)

@@ -1,3 +1,12 @@
+// tests/utils.test.ts
+//
+// The money and date rules everything else is built on.
+//
+// The date tests are the ones worth reading: a due date is a DATE, not an
+// instant, and measuring the gap in elapsed hours made the answer depend on the
+// time of day — a card due today read "due tomorrow" in the morning and
+// "overdue" after lunch. Statement-close prediction has the same shape.
+//
 import { describe, expect, it, afterEach, vi } from 'vitest'
 import {
   formatCurrency,

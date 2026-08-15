@@ -63,8 +63,8 @@ export function BeforeStatementCloses({ cards, colorById }: Props) {
     return (
       <div className="h-full grid place-items-center p-6 text-center">
         <div>
-          <p className="text-xs text-ink-2">Every card is under {TARGET_PERCENT}%.</p>
-          <p className="mt-1 text-xs text-ink-3">Nothing to pay down before close.</p>
+          <p className="text-xs text-ink-2">Every card reports under {TARGET_PERCENT}%.</p>
+          <p className="mt-1 text-xs text-ink-3">Nothing worth paying down early.</p>
         </div>
       </div>
     )
@@ -97,8 +97,16 @@ export function BeforeStatementCloses({ cards, colorById }: Props) {
                 </span>{' '}
                 on <span className="font-medium">{card.name}</span>
               </p>
+              {/*
+                `77% → 30%` rather than `Currently 77%`. The old line said where
+                the card is but never where the payment would land it, which is
+                the only thing that explains what the figure above is for — it
+                is not the minimum, and it is not the statement balance.
+              */}
               <p className="mt-0.5 text-[11px] text-ink-3">
-                <span className="sensitive-value">Currently {utilization}%</span>
+                <span className="sensitive-value tnum">
+                  {utilization}% → {TARGET_PERCENT}%
+                </span>
                 {closes
                   ? ` · closes ${closes.toLocaleDateString('en-US', {
                       month: 'short',

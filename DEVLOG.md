@@ -86,3 +86,56 @@ Running log of what was built, decided, and learned each session. Updated at the
 - [ ] First commit and push to GitHub
 
 ---
+
+---
+
+## 2026-08-14 — Public surface, auth, mobile, docs
+
+The biggest single session so far. Started as "add some Motion" and became a
+rebuild of everything a signed-out visitor sees.
+
+### Built
+
+- **`DashboardView` extracted** from the dashboard page. It holds every pixel
+  and does no data fetching; the real page passes Supabase rows in and the demo
+  passes fixtures in. The old `DemoDashboard` lookalike and `DonutChart` are
+  deleted. The demo can no longer drift from the app.
+- **Public filmstrip** — `/demo ← / → /sign-in` as three always-mounted panels
+  that slide. The nav never unmounts.
+- **Landing rebuilt** — typewriter headline, animated card stack, migrated off
+  the old slate palette.
+- **Auth** — Google and Apple added on Clerk, form embedded as a panel, themed
+  in CSS against Clerk's `cl-*` classes. Added `/sso-callback`.
+- **Dark mode everywhere**, applied before first paint by a blocking script.
+- **Phone layout** — tabs, and the document scrolls rather than an inner box.
+- **"Pay before close" renamed** to "Lower reported utilization", with
+  `77% → 30%` on each row.
+- **Docs** — new `docs/ARCHITECTURE.md`, rewritten README, PRD updated.
+
+### Decided
+
+| Decision | Why |
+|---|---|
+| Keep Clerk, add social login | Vendor choice is independent of login methods; both do Google and Apple |
+| Clerk → Supabase Auth deferred | Revisit *with* the RLS work, not separately — that's where it pays out |
+| Production Clerk waits for a domain | Prod instances need DNS; they can't run against localhost |
+| Phone gets a different layout, not a reflow | The desktop grid's fractions collapse at phone height |
+
+### Learned
+
+- A flex item that is a scroll container has `min-height: auto` resolve to 0 —
+  so `overflow-clip` silently stops a page growing.
+- Percentage heights need a definite parent; `min-h-dvh` doesn't give one.
+- `--raised` is darker than `--ground` in light and lighter in dark, so surface
+  pairings invert between themes.
+- iOS only collapses its address bar for *document* scroll.
+- Next dev compiles on demand, so parallel Playwright workers make it drop
+  connections — two workers is stable and faster than five.
+
+### Next session
+
+- [ ] Move reads off the Supabase service-role key so RLS actually runs
+- [ ] `npm audit` — pre-existing advisories, bumping Next clears most
+- [ ] Background sync (Vercel cron) so data updates when the app isn't open
+- [ ] Deploy: domain, production Clerk, Plaid production application
+

@@ -11,10 +11,16 @@
 // This route never touches the client with sensitive data —
 // it reads access_tokens from Supabase server-side, calls Plaid,
 // and writes results back to Supabase.
+//
+// Two clients, split by table:
+//   connected_accounts → supabaseAdmin, because it stores plaid_access_token
+//     and that column must never be readable by the user-level Postgres role
+//   cards              → supabaseForUser(), so RLS enforces ownership
+// The reasoning is spelled out in docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import type { CreditCardLiability } from 'plaid'
 import { shouldKeepExistingLimit } from '@/lib/cards'
 
@@ -37,6 +43,7 @@ function errorCode(err: unknown): string {
 
 async function syncConnection(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
+  const db = supabaseForUser()
 
   try {
     // accountsBalanceGet — NOT accountsGet. accountsGet returns Plaid's cached
@@ -61,7 +68,7 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
     }
 
     // Which of these cards carry a user-entered limit, so we don't overwrite it.
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await db
       .from('cards')
       .select('plaid_account_id, limit_is_manual')
       .eq('connected_account_id', conn.id)
@@ -85,7 +92,7 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
           manualLimit.has(account.account_id)
         )
 
-        return supabaseAdmin
+        return db
           .from('cards')
           .update({
             balance_current: account.balances.current,

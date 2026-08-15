@@ -233,29 +233,56 @@ using (user_id = auth.jwt() ->> 'sub')
 `sub` ("subject") claim of the token the request arrived with. Clerk's user ID
 is what's stored in that column, so the policies are already written correctly.
 
-**They have historically never run.** Postgres exempts the `service_role` from
-RLS by design, and every route used `supabaseAdmin` — which is built from the
+**For a long time they never ran.** Postgres exempts the `service_role` from RLS
+by design, and every route used `supabaseAdmin` — which is built from the
 service-role key. So isolation rested on all 25 queries remembering
-`.eq('user_id', …)`. Correct today; the risk is the 26th.
+`.eq('user_id', …)`. Correct at the time; the risk was always the 26th.
 
-### The migration, in progress
+### How it works now
 
-`lib/supabase.ts` now also exports **`supabaseForUser()`** — the anon key plus
-the caller's Clerk session token, so Postgres actually evaluates the policies.
+`lib/supabase.ts` exports **`supabaseForUser()`** — the anon key plus the
+caller's Clerk session token, so Postgres actually evaluates the policies. Every
+query against user-owned data goes through it. The `.eq('user_id', …)` filters
+are still there, but they are belt and braces now, not the security boundary:
+a query that forgets one returns too few rows rather than everyone's.
 
 This relies on Clerk's **native Supabase integration**: Supabase is configured
 to trust Clerk's domain as a third-party auth provider, and `getToken()` is
 called with no template argument. The older JWT-template approach was
 deprecated in April 2025; nothing here shares a Supabase JWT secret with Clerk.
 
-`app/api/viewed/route.ts` is migrated as the pilot — the smallest read/write
-pair, so a misconfiguration fails there rather than somewhere expensive. Its
-`.eq('user_id', …)` filters are now belt and braces rather than the security
-boundary.
+It fails closed. If that integration is not configured, the token isn't trusted,
+the request is treated as anonymous, and queries return nothing — a visibly
+broken dashboard, not a silent leak.
 
-**Remaining:** the other 13 files using `supabaseAdmin`. Move reads first, then
-writes. Anything genuinely without a user session — a cron sync — may keep
-`supabaseAdmin`, but should say why at the call site.
+### The one exception, and why it isn't going away
+
+`connected_accounts` stays on `supabaseAdmin`. It stores `plaid_access_token`,
+a bearer credential for the user's bank data.
+
+The tempting fix — give it policies like every other table, then `REVOKE` the
+token column from the user-level role — doesn't work. `supabaseForUser()`
+authenticates as the `authenticated` role, and so would a Supabase client
+running in a browser with a Clerk token. Postgres cannot tell them apart: any
+policy permissive enough for the server route is equally permissive for the
+browser, and any REVOKE that hides the token from the browser also hides it from
+the route that legitimately needs it.
+
+There is no policy that separates them, so the separation stays at the key
+level: only code holding the service-role key touches that table. Routes that
+need both — `cards/remove`, and the Plaid sync routes — hold two clients and say
+so at the call site.
+
+**`tests/rls-boundary.test.ts` enforces this.** It sweeps the source and fails
+if `supabaseAdmin` is used against any table other than `connected_accounts`.
+That catches the realistic regression: a query written months from now that
+reaches for the nearest client and silently gets a superuser.
+
+### Applying it to a fresh database
+
+Run `docs/schema.sql`, then `docs/migrations/001-rls-write-policies.sql`. The
+second is not optional — RLS with a SELECT-only policy **denies every write**,
+so without it the app reads fine and fails on save.
 
 Note this also settles the Clerk-vs-Supabase-Auth question in Clerk's favour:
 the native integration closes almost all of the gap that previously argued for

@@ -26,17 +26,27 @@ export function ManualLimitInput({ cardId, currentLimit }: Props) {
     setSaving(true)
     setError('')
 
-    const res = await fetch('/api/cards/update-limit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ card_id: cardId, limit }),
-    })
+    // Reset in `finally`: router.refresh() re-fetches server data without
+    // unmounting this component, so state survives. Clearing `saving` only on
+    // the error path left it true after a successful save, and re-opening the
+    // editor showed a permanently disabled "..." button.
+    try {
+      const res = await fetch('/api/cards/update-limit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ card_id: cardId, limit }),
+      })
 
-    if (res.ok) {
-      setEditing(false)
-      router.refresh()
-    } else {
-      setError('Failed to save')
+      if (res.ok) {
+        setEditing(false)
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error ?? 'Failed to save')
+      }
+    } catch {
+      setError('Could not reach the server')
+    } finally {
       setSaving(false)
     }
   }

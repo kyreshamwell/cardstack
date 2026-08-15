@@ -53,26 +53,38 @@ export function EditManualCardButton({
     setSaving(true)
     setError('')
 
-    const res = await fetch('/api/cards/update-manual', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        card_id: cardId,
-        name: form.name.trim(),
-        institution_name: form.institution_name.trim(),
-        balance_current: form.balance_current ? parseFloat(form.balance_current) : undefined,
-        balance_limit: form.balance_limit ? parseFloat(form.balance_limit) : undefined,
-        due_date: form.due_date,
-        minimum_payment: form.minimum_payment,
-      }),
-    })
+    // The reset lives in `finally` on purpose. router.refresh() re-fetches the
+    // server data but does NOT unmount this component, so React keeps its state
+    // — clearing `saving` only on the error path left it stuck at true after a
+    // successful save, and the next time the dialog opened the button read
+    // "Saving…" and was disabled forever.
+    try {
+      const res = await fetch('/api/cards/update-manual', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          card_id: cardId,
+          name: form.name.trim(),
+          institution_name: form.institution_name.trim(),
+          balance_current: form.balance_current ? parseFloat(form.balance_current) : undefined,
+          balance_limit: form.balance_limit ? parseFloat(form.balance_limit) : undefined,
+          due_date: form.due_date,
+          minimum_payment: form.minimum_payment,
+        }),
+      })
 
-    if (res.ok) {
-      close()
-      router.refresh()
-    } else {
-      const data = await res.json()
-      setError(data.error ?? 'Failed to update card.')
+      if (res.ok) {
+        close()
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error ?? 'Failed to update card.')
+      }
+    } catch {
+      // fetch only rejects on a network-level failure, which the old code left
+      // unhandled — same stuck button, no message.
+      setError('Could not reach the server. Check your connection and try again.')
+    } finally {
       setSaving(false)
     }
   }
@@ -82,7 +94,7 @@ export function EditManualCardButton({
       <button
         onClick={() => setOpen(true)}
         title="Edit card"
-        className="text-white/30 hover:text-white/80 transition-colors"
+        className="text-ink-3 hover:text-ink transition-colors"
       >
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />

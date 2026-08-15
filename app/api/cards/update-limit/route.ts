@@ -4,7 +4,7 @@
 // Verifies the card belongs to the authenticated user before updating.
 
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseForUser } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   const { userId } = await auth()
@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid input' }, { status: 400 })
   }
 
-  const { data, error } = await supabaseAdmin
+  const db = supabaseForUser()
+
+  const { data, error } = await db
     .from('cards')
     // limit_is_manual stops the next Plaid sync from overwriting this.
     .update({ balance_limit: limit, limit_is_manual: true })

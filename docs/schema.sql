@@ -46,9 +46,14 @@ create table cards (
 -- ─── Row Level Security ──────────────────────────────────────────────────────────
 -- RLS ensures users can only ever read their own rows.
 --
--- We're using Clerk (not Supabase Auth), so we use the service role key
--- for all server-side writes — which bypasses RLS. These SELECT policies
--- protect against any future client-side queries and are good practice.
+-- HISTORICAL NOTE: these SELECT policies originally did nothing at runtime.
+-- Every route used the service role key, and Postgres exempts service_role from
+-- RLS by design, so the policies were documentation rather than enforcement.
+--
+-- That changed. The app now queries as the signed-in user via supabaseForUser()
+-- in lib/supabase.ts, so these policies are live. The INSERT/UPDATE/DELETE
+-- policies they need live in docs/migrations/001-rls-write-policies.sql — RLS
+-- with a SELECT-only policy DENIES every write, so run that migration too.
 alter table connected_accounts enable row level security;
 alter table cards enable row level security;
 

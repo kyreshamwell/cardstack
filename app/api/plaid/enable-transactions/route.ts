@@ -6,6 +6,12 @@
 // consent, Plaid is often still pulling the initial transaction history and
 // returns PRODUCT_NOT_READY. That's a "check back shortly," not a failure —
 // so we record the consent regardless and let the sync catch up.
+//
+// Stays on supabaseAdmin deliberately. This route only touches
+// connected_accounts, which holds plaid_access_token and is never exposed to
+// the user-level Postgres role — so the .eq('user_id', …) below is the actual
+// security boundary here, not belt and braces as it is elsewhere.
+// See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
 import { supabaseAdmin } from '@/lib/supabase'

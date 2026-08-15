@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseForUser } from '@/lib/supabase'
 
 export async function PATCH(request: Request) {
   const { userId } = await auth()
@@ -10,7 +10,9 @@ export async function PATCH(request: Request) {
 
   if (!card_id) return Response.json({ error: 'card_id required' }, { status: 400 })
 
-  const { data: card } = await supabaseAdmin
+  const db = supabaseForUser()
+
+  const { data: card } = await db
     .from('cards')
     .select('id, source, balance_limit')
     .eq('id', card_id)
@@ -35,7 +37,7 @@ export async function PATCH(request: Request) {
     updates.minimum_payment = minimum_payment ? Number(minimum_payment) : null
   }
 
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('cards')
     .update(updates)
     .eq('id', card_id)

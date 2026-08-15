@@ -11,9 +11,14 @@
 // Removed transactions are real: a pending charge gets replaced by the posted
 // version, and Plaid tells us to delete the pending row.
 
+// Two clients, split by table: connected_accounts stays on supabaseAdmin
+// because it stores plaid_access_token; cards and transactions go through
+// supabaseForUser() so RLS enforces ownership in the database.
+// See docs/migrations/001-rls-write-policies.sql.
+
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import type { Transaction } from 'plaid'
 
 type Connection = {
@@ -45,12 +50,13 @@ function errorCode(err: unknown): string {
 
 async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
+  const db = supabaseForUser()
 
   try {
     // Map Plaid account IDs to our card rows. Anything not in this map (a
     // checking account on the same login, say) is skipped — we only store
     // transactions for cards we actually track.
-    const { data: cards } = await supabaseAdmin
+    const { data: cards } = await db
       .from('cards')
       .select('id, plaid_account_id')
       .eq('connected_account_id', conn.id)
@@ -104,14 +110,14 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
       }))
 
     if (rows.length > 0) {
-      const { error } = await supabaseAdmin
+      const { error } = await db
         .from('transactions')
         .upsert(rows, { onConflict: 'plaid_transaction_id' })
       if (error) throw new Error(`Upsert failed: ${error.message}`)
     }
 
     if (removedIds.length > 0) {
-      await supabaseAdmin
+      await db
         .from('transactions')
         .delete()
         .eq('user_id', userId)

@@ -15,16 +15,27 @@
 //     — server-side only, NEVER in a client component
 //     — think of it as a database superuser
 //
-// ── Why this file is mid-migration ─────────────────────────────────────────
+// ── Which client to reach for ──────────────────────────────────────────────
 //
-// Everything used supabaseAdmin. That works, but it means the RLS policies in
-// docs/schema.sql never run, and the only thing keeping one user's cards away
-// from another is that all 25 queries remember `.eq('user_id', …)`. Correct
-// today; one forgotten filter away from returning everyone's rows tomorrow.
+// Default to supabaseForUser(). Everything used to run on supabaseAdmin, which
+// meant the RLS policies never ran and the only thing keeping one user's cards
+// away from another was that every query remembered `.eq('user_id', …)`.
+// Correct at the time, one forgotten filter away from returning everyone's rows.
 //
-// supabaseForUser() moves that guarantee into the database. Use it for anything
-// acting on behalf of a signed-in user. Reserve supabaseAdmin for work with no
-// user session at all — a cron sync, say — and say why at the call site.
+// supabaseForUser() moves that guarantee into the database, so a query that
+// forgets its filter returns too few rows instead of too many.
+//
+// supabaseAdmin now has exactly ONE legitimate use: the connected_accounts
+// table, which stores plaid_access_token. That column is a bearer credential
+// for the user's bank data and must never be readable by the user-level
+// Postgres role — and there is no policy that would allow the server route to
+// read it while denying a browser, because both authenticate as the same
+// `authenticated` role. So the separation lives at the key level instead.
+//
+// tests/rls-boundary.test.ts enforces that rule by sweeping the source: any
+// supabaseAdmin query against a table other than connected_accounts fails the
+// build. If you have a genuine new case — a cron job with no user session, say
+// — extend that test deliberately rather than working around it.
 
 import { auth } from '@clerk/nextjs/server'
 import { createClient } from '@supabase/supabase-js'
@@ -37,6 +48,7 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
 // Admin client — server-side only, RLS bypassed.
+// Only for connected_accounts; see the note above and tests/rls-boundary.test.ts.
 export const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey)
 
 /**

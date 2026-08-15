@@ -23,16 +23,26 @@ export function RemoveCardButton({ cardId, cardName }: Props) {
     if (!confirmed) return
 
     setRemoving(true)
-    const res = await fetch('/api/cards/remove', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ card_id: cardId }),
-    })
 
-    if (res.ok) {
-      router.refresh()
-    } else {
-      alert('Failed to remove card. Please try again.')
+    // Reset in `finally`: router.refresh() re-renders the list without
+    // unmounting, and React can reuse this instance for a different card — so a
+    // flag left set would show a spinning, disabled trash icon on a card that
+    // was never being removed.
+    try {
+      const res = await fetch('/api/cards/remove', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ card_id: cardId }),
+      })
+
+      if (res.ok) {
+        router.refresh()
+      } else {
+        alert('Failed to remove card. Please try again.')
+      }
+    } catch {
+      alert('Could not reach the server. Check your connection and try again.')
+    } finally {
       setRemoving(false)
     }
   }
@@ -42,7 +52,7 @@ export function RemoveCardButton({ cardId, cardName }: Props) {
       onClick={handleRemove}
       disabled={removing}
       title="Remove card"
-      className="text-white/30 hover:text-red-400 transition-colors disabled:opacity-50"
+      className="text-ink-3 hover:text-critical transition-colors disabled:opacity-50"
     >
       {removing ? (
         <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

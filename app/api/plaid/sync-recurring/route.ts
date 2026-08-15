@@ -11,9 +11,14 @@
 // repeating charges). Inflow on a credit card is payments and refunds, which
 // the transaction list already covers.
 
+// Two clients, split by table: connected_accounts stays on supabaseAdmin
+// because it stores plaid_access_token; cards and recurring_charges go through
+// supabaseForUser() so RLS enforces ownership in the database.
+// See docs/migrations/001-rls-write-policies.sql.
+
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 
 type Connection = {
   id: string
@@ -34,9 +39,10 @@ function errorCode(err: unknown): string {
 
 async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
+  const db = supabaseForUser()
 
   try {
-    const { data: cards } = await supabaseAdmin
+    const { data: cards } = await db
       .from('cards')
       .select('id, plaid_account_id')
       .eq('connected_account_id', conn.id)
@@ -79,7 +85,7 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
       }))
 
     if (rows.length > 0) {
-      const { error } = await supabaseAdmin
+      const { error } = await db
         .from('recurring_charges')
         .upsert(rows, { onConflict: 'plaid_stream_id' })
       if (error) throw new Error(`Upsert failed: ${error.message}`)

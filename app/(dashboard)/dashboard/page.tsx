@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseForUser } from '@/lib/supabase'
 import { getInstitutionInfo } from '@/lib/institutions'
 import { CARD_COLORS } from '@/lib/cards'
 import { DashboardView, type DashboardCard } from '@/components/dashboard/DashboardView'
@@ -19,8 +19,14 @@ import { EnableTransactionsButton } from '@/components/cards/EnableTransactionsB
 // Queries Supabase, shapes rows into view props, and injects the buttons that
 // need a network. The layout and arithmetic live in DashboardView, which the
 // public demo renders too — so the demo cannot drift from the real thing.
+//
+// Every query below runs through supabaseForUser(), so Row Level Security is
+// enforced in the database. The `.eq('user_id', …)` filters are kept as belt
+// and braces — they narrow the query, but they are no longer what makes it
+// safe. See lib/supabase.ts.
 export default async function DashboardPage() {
   const { userId } = await auth()
+  const db = supabaseForUser()
 
   const [
     { data: cards },
@@ -29,12 +35,12 @@ export default async function DashboardPage() {
     { data: recurring },
     { data: userState },
   ] = await Promise.all([
-    supabaseAdmin
+    db
       .from('cards')
       .select('*, connected_accounts(institution_name, institution_id)')
       .eq('user_id', userId)
       .order('created_at', { ascending: true }),
-    supabaseAdmin
+    db
       .from('transactions')
       .select(
         'id, card_id, name, merchant_name, amount, transaction_date, pending, category, created_at'
@@ -42,18 +48,18 @@ export default async function DashboardPage() {
       .eq('user_id', userId)
       .order('transaction_date', { ascending: false })
       .limit(50),
-    supabaseAdmin
+    db
       .from('connected_accounts')
       .select('id, institution_name, transactions_enabled')
       .eq('user_id', userId),
-    supabaseAdmin
+    db
       .from('recurring_charges')
       .select(
         'id, card_id, description, merchant_name, frequency, average_amount, last_amount, predicted_next_date, status'
       )
       .eq('user_id', userId)
       .eq('is_active', true),
-    supabaseAdmin
+    db
       .from('user_state')
       .select('last_viewed_at')
       .eq('user_id', userId)

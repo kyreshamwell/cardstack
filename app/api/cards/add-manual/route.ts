@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseForUser } from '@/lib/supabase'
 
 export async function POST(request: Request) {
   const { userId } = await auth()
@@ -15,7 +15,9 @@ export async function POST(request: Request) {
   const current = Number(balance_current)
   const limit = Number(balance_limit)
 
-  const { error } = await supabaseAdmin.from('cards').insert({
+  const db = supabaseForUser()
+
+  const { error } = await db.from('cards').insert({
     user_id: userId,
     source: 'manual',
     name,

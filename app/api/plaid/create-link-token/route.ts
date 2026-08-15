@@ -14,6 +14,12 @@
 //                          collect consent for Transactions on banks that were
 //                          linked before we asked for it. Update mode reuses the
 //                          same Item and access_token, so nothing is duplicated.
+//
+// Stays on supabaseAdmin deliberately. Its only query reads plaid_access_token
+// from connected_accounts, which is exactly the column the user-level Postgres
+// role must never see — so the .eq('user_id', …) below is the actual security
+// boundary here, not belt and braces as it is elsewhere.
+// See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'

@@ -8,7 +8,7 @@
 // updates those rows instead of duplicating them.
 
 import { auth } from '@clerk/nextjs/server'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseForUser } from '@/lib/supabase'
 
 interface IncomingRow {
   date: string
@@ -41,8 +41,10 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Missing card or rows' }, { status: 400 })
   }
 
+  const db = supabaseForUser()
+
   // Confirm the card belongs to this user before writing anything against it.
-  const { data: card, error: cardError } = await supabaseAdmin
+  const { data: card, error: cardError } = await db
     .from('cards')
     .select('id, plaid_account_id')
     .eq('id', cardId)
@@ -83,7 +85,7 @@ export async function POST(request: Request) {
     source: 'csv',
   }))
 
-  const { error } = await supabaseAdmin
+  const { error } = await db
     .from('transactions')
     .upsert(payload, { onConflict: 'plaid_transaction_id' })
 

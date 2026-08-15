@@ -10,10 +10,15 @@
 // Why can't the browser do this directly?
 //   The access_token must NEVER touch the client. This route is the only place
 //   it exists — Supabase stores it, and it only ever gets read server-side.
+//
+// That is also why this route uses two Supabase clients: the connected_accounts
+// insert below carries the access_token and stays on supabaseAdmin, while the
+// cards writes go through supabaseForUser() so RLS enforces ownership.
+// See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
 import { plaidClient } from '@/lib/plaid'
-import { supabaseAdmin } from '@/lib/supabase'
+import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import { CountryCode } from 'plaid'
 
 export async function POST(request: Request) {
@@ -21,6 +26,8 @@ export async function POST(request: Request) {
   if (!userId) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  const db = supabaseForUser()
 
   const { public_token } = await request.json()
 
@@ -88,7 +95,7 @@ export async function POST(request: Request) {
       last_synced_at: new Date().toISOString(),
     }))
 
-    const { error: cardsError } = await supabaseAdmin.from('cards').insert(cardRows)
+    const { error: cardsError } = await db.from('cards').insert(cardRows)
     if (cardsError) {
       console.error('Error saving cards:', cardsError)
       return Response.json({ error: 'Failed to save cards' }, { status: 500 })
@@ -103,7 +110,7 @@ export async function POST(request: Request) {
     const creditLiabilities = liabilitiesResponse.data.liabilities.credit ?? []
 
     for (const liability of creditLiabilities) {
-      await supabaseAdmin
+      await db
         .from('cards')
         .update({
           due_date: liability.next_payment_due_date ?? null,

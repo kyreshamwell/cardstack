@@ -39,25 +39,33 @@ export function AddManualCardButton() {
     setSaving(true)
     setError('')
 
-    const res = await fetch('/api/cards/add-manual', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: form.name.trim(),
-        institution_name: form.institution_name.trim(),
-        balance_current: parseFloat(form.balance_current),
-        balance_limit: parseFloat(form.balance_limit),
-        due_date: form.due_date || null,
-        minimum_payment: form.minimum_payment ? parseFloat(form.minimum_payment) : null,
-      }),
-    })
+    // Reset in `finally`: router.refresh() does not unmount this component, so
+    // clearing `saving` only on the error path left the button stuck reading
+    // "Saving…" the next time the dialog was opened.
+    try {
+      const res = await fetch('/api/cards/add-manual', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          institution_name: form.institution_name.trim(),
+          balance_current: parseFloat(form.balance_current),
+          balance_limit: parseFloat(form.balance_limit),
+          due_date: form.due_date || null,
+          minimum_payment: form.minimum_payment ? parseFloat(form.minimum_payment) : null,
+        }),
+      })
 
-    if (res.ok) {
-      close()
-      router.refresh()
-    } else {
-      const data = await res.json()
-      setError(data.error ?? 'Failed to add card.')
+      if (res.ok) {
+        close()
+        router.refresh()
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setError(data.error ?? 'Failed to add card.')
+      }
+    } catch {
+      setError('Could not reach the server. Check your connection and try again.')
+    } finally {
       setSaving(false)
     }
   }

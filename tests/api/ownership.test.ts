@@ -18,10 +18,15 @@ vi.mock('@clerk/nextjs/server', () => ({
   auth: () => Promise.resolve({ userId: mocks.userId }),
 }))
 
+// Both clients resolve to the same recorder. The routes now split their work
+// between them — user data through supabaseForUser(), and connected_accounts
+// (which holds plaid_access_token) still through supabaseAdmin — but the
+// assertions below care about the queries issued, not which client issued them.
 vi.mock('@/lib/supabase', () => ({
   get supabaseAdmin() {
     return mocks.supabase!.client
   },
+  supabaseForUser: () => mocks.supabase!.client,
 }))
 
 const updateLimit = (await import('@/app/api/cards/update-limit/route')).POST

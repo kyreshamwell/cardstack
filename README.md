@@ -182,10 +182,12 @@ statement-close prediction, recurring-cadence conversion, CSV parsing, and the
 demo fixtures. Fast, no environment.
 
 **API routes** — run against a fake Supabase client that records every query.
-That design is deliberate: routes use the service-role key, which **bypasses
-RLS**, so tenant isolation rests entirely on each query carrying
-`.eq('user_id', …)`. Recording filters lets a test assert that directly. An
-in-memory database could not — a query missing the filter still returns rows.
+Recording the filters lets a test assert tenant scoping directly; an in-memory
+database could not, since a query missing its filter still returns rows.
+Tenant isolation is enforced by Postgres row-level security (see
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security)), and
+`tests/rls-boundary.test.ts` sweeps the source to keep the service-role key —
+which bypasses RLS — confined to the one table that needs it.
 
 **Components (jsdom)** — prioritised by blast radius rather than visibility.
 `ImportCsvButton` first, because its sign toggle silently turns every purchase

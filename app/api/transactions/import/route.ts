@@ -16,6 +16,22 @@ interface IncomingRow {
   amount: number
 }
 
+// Caps on what one request may carry. Nothing here is a security boundary in
+// the ownership sense — the caller is authenticated and can only write rows
+// they own — but "authenticated" is not "trusted with unbounded writes". The
+// body arrives as one JSON array and Next puts no default limit on it, so
+// without these a single POST decides how much of the database it gets.
+//
+// Rejecting past the cap rather than truncating: a silent slice would import
+// part of the file and report success, and the missing months would surface
+// weeks later as a balance that doesn't reconcile. Ten years of a busy card is
+// comfortably under this, so hitting it means something is wrong.
+const MAX_ROWS = 10_000
+
+// Longest description we'll store. Real ones run to about 100 characters;
+// this is only here so the column can't be used as free storage.
+const MAX_DESCRIPTION = 500
+
 /** Stable ID for a CSV row — same row in, same ID out, so re-imports dedupe. */
 function syntheticId(cardId: string, row: IncomingRow): string {
   const slug = row.description
@@ -32,13 +48,24 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { cardId, rows } = (await request.json()) as {
-    cardId?: string
-    rows?: IncomingRow[]
+  let body: { cardId?: unknown; rows?: unknown }
+  try {
+    body = await request.json()
+  } catch {
+    return Response.json({ error: 'Malformed request body' }, { status: 400 })
   }
 
-  if (!cardId || !Array.isArray(rows) || rows.length === 0) {
+  const { cardId, rows } = body as { cardId?: string; rows?: IncomingRow[] }
+
+  if (typeof cardId !== 'string' || !cardId || !Array.isArray(rows) || rows.length === 0) {
     return Response.json({ error: 'Missing card or rows' }, { status: 400 })
+  }
+
+  if (rows.length > MAX_ROWS) {
+    return Response.json(
+      { error: `That file has ${rows.length.toLocaleString()} rows; the limit is ${MAX_ROWS.toLocaleString()} per import. Split it and import the halves.` },
+      { status: 413 }
+    )
   }
 
   const db = supabaseForUser()
@@ -75,7 +102,7 @@ export async function POST(request: Request) {
     // Manual cards have no Plaid account; fall back to the card's own id so the
     // NOT NULL column always has something meaningful in it.
     plaid_account_id: card.plaid_account_id ?? cardId,
-    name: r.description.trim(),
+    name: r.description.trim().slice(0, MAX_DESCRIPTION),
     merchant_name: null,
     amount: r.amount,
     transaction_date: r.date,

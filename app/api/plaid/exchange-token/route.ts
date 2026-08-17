@@ -17,7 +17,7 @@
 // See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
-import { plaidClient } from '@/lib/plaid'
+import { plaidClient, plaidErrorCode } from '@/lib/plaid'
 import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import { CountryCode } from 'plaid'
 
@@ -29,23 +29,55 @@ export async function POST(request: Request) {
 
   const db = supabaseForUser()
 
-  const { public_token } = await request.json()
+  let public_token: unknown
+  try {
+    public_token = (await request.json())?.public_token
+  } catch {
+    return Response.json({ error: 'Malformed request body' }, { status: 400 })
+  }
 
-  // ── Step 1: Swap public_token for access_token ──────────────────────────────
-  const exchangeResponse = await plaidClient.itemPublicTokenExchange({ public_token })
-  const { access_token, item_id } = exchangeResponse.data
+  if (typeof public_token !== 'string' || !public_token) {
+    return Response.json({ error: 'Missing public_token' }, { status: 400 })
+  }
 
-  // ── Step 2: Get institution name ─────────────────────────────────────────────
-  const itemResponse = await plaidClient.itemGet({ access_token })
-  const institutionId = itemResponse.data.item.institution_id ?? ''
-
+  // ── Steps 1 & 2: Exchange the token, then identify the institution ──────────
+  //
+  // Wrapped together because they're the calls that run BEFORE anything is
+  // persisted, so a throw here leaves no partial state — there is nothing to
+  // roll back, and the user can simply reconnect.
+  //
+  // Left unguarded, a public_token that Plaid rejects (expired — they last ~30
+  // minutes — or already exchanged, which happens when Link's onSuccess fires
+  // twice) threw an unhandled rejection. The user saw a bare 500 from a flow
+  // that had otherwise worked, with the actual reason only in the server log.
+  let access_token: string
+  let item_id: string
+  let institutionId = ''
   let institutionName = 'Unknown'
-  if (institutionId) {
-    const instResponse = await plaidClient.institutionsGetById({
-      institution_id: institutionId,
-      country_codes: [CountryCode.Us],
-    })
-    institutionName = instResponse.data.institution.name
+
+  try {
+    const exchangeResponse = await plaidClient.itemPublicTokenExchange({ public_token })
+    access_token = exchangeResponse.data.access_token
+    item_id = exchangeResponse.data.item_id
+
+    const itemResponse = await plaidClient.itemGet({ access_token })
+    institutionId = itemResponse.data.item.institution_id ?? ''
+
+    if (institutionId) {
+      const instResponse = await plaidClient.institutionsGetById({
+        institution_id: institutionId,
+        country_codes: [CountryCode.Us],
+      })
+      institutionName = instResponse.data.institution.name
+    }
+  } catch (err: unknown) {
+    // Log the detail, return a generic message. Plaid's error text can name the
+    // institution and echo request specifics, none of which the browser needs.
+    console.error('Plaid token exchange failed:', plaidErrorCode(err))
+    return Response.json(
+      { error: 'Could not complete the bank connection. Please try again.' },
+      { status: 502 }
+    )
   }
 
   // ── Step 3: Save connection to Supabase ───────────────────────────────────────
@@ -67,8 +99,24 @@ export async function POST(request: Request) {
   }
 
   // ── Step 4: Fetch accounts from Plaid ────────────────────────────────────────
-  const accountsResponse = await plaidClient.accountsGet({ access_token })
-  const accounts = accountsResponse.data.accounts
+  //
+  // Past this point the connection row EXISTS, so a failure here is not a
+  // rollback case: the access_token is the only handle on the Plaid Item, and
+  // discarding it would orphan the Item at Plaid with no way to reach it again.
+  // Better to keep the connection and let a later sync pick up the cards.
+  let accounts
+  try {
+    const accountsResponse = await plaidClient.accountsGet({ access_token })
+    accounts = accountsResponse.data.accounts
+  } catch (err: unknown) {
+    console.error('Fetching accounts failed after connecting:', plaidErrorCode(err))
+    return Response.json({
+      success: true,
+      institution: institutionName,
+      cards_connected: 0,
+      warning: 'Bank connected, but its accounts could not be read yet. Try Refresh in a moment.',
+    })
+  }
 
   // In production/development, filter to credit cards only.
   // In sandbox, Plaid test institutions only return depository accounts so we

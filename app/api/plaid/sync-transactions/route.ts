@@ -17,7 +17,7 @@
 // See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
-import { plaidClient } from '@/lib/plaid'
+import { plaidClient, plaidErrorCode, plaidErrorCodeOrNull } from '@/lib/plaid'
 import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import type { Transaction } from 'plaid'
 
@@ -40,13 +40,6 @@ const CONSENT_CODES = [
   'PRODUCTS_NOT_SUPPORTED',
   'INVALID_PRODUCT',
 ]
-
-function errorCode(err: unknown): string {
-  const fromPlaid = (err as { response?: { data?: { error_code?: string } } })
-    ?.response?.data?.error_code
-  if (fromPlaid) return fromPlaid
-  return err instanceof Error ? err.message : 'UNKNOWN_ERROR'
-}
 
 async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
@@ -134,8 +127,11 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
 
     return { ok: true, institution, added: rows.length, removed: removedIds.length }
   } catch (err: unknown) {
-    const code = errorCode(err)
-    console.error(`Transaction sync failed for ${institution}: ${code}`)
+    console.error(`Transaction sync failed for ${institution}: ${plaidErrorCode(err)}`)
+    // Full detail logged above; only Plaid's public codes travel to the client.
+    // An upsert failure must not surface its Postgres message here — the UI
+    // branches on this field, and it renders it verbatim when it can't match it.
+    const code = plaidErrorCodeOrNull(err) ?? 'SYNC_FAILED'
     return {
       ok: false,
       institution,

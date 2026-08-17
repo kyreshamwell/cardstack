@@ -104,16 +104,31 @@ create policy "Users update their own state"
 -- supabaseForUser() authenticates as the `authenticated` role. So does a
 -- Supabase client running in a browser with a Clerk token. Postgres cannot
 -- tell those two apart — they are the same role — so any policy permissive
--- enough for the server route is equally permissive for the browser, and
--- column-level REVOKE that hides the token from the browser would also hide it
--- from the server route that legitimately needs it.
+-- enough for the server route is equally permissive for the browser.
 --
--- There is no policy that separates them. So the separation stays at the key
+-- There is no POLICY that separates them. So the separation stays at the key
 -- level: only code holding the service-role key touches this table.
 --
 -- The existing SELECT policy is left in place — it's what lets the dashboard's
 -- `cards → connected_accounts(institution_name, …)` join resolve for the user
 -- client, and that join never selects the token column.
+--
+-- ⚠ CORRECTED BY 002-revoke-token-column.sql — read this part with care.
+--
+-- This file originally continued: "...and column-level REVOKE that hides the
+-- token from the browser would also hide it from the server route that
+-- legitimately needs it." That was wrong, and it left the token readable from
+-- the browser for as long as it stood.
+--
+-- supabaseAdmin authenticates as `service_role`, NOT `authenticated`. Column
+-- privileges are per-role, so they draw precisely the line policies cannot: the
+-- browser and supabaseForUser() lose the column, supabaseAdmin keeps it. (The
+-- spelling matters — a bare column REVOKE is silently a no-op against Supabase's
+-- default table-level grant. 002 explains why it is revoke-then-grant-back.)
+--
+-- The lesson generalizes past this table: "the app never selects that column"
+-- is a statement about the app's queries, not about what the caller is allowed
+-- to ask for. RLS scopes rows; only grants scope columns. See 002.
 
 -- ─── Verify ────────────────────────────────────────────────────────────────
 -- Should list 16 policies: 3 writes × 3 tables, 2 writes on user_state,

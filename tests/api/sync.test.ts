@@ -25,7 +25,11 @@ vi.mock('@/lib/supabase', () => ({
   supabaseForUser: () => mocks.supabase!.client,
 }))
 
-vi.mock('@/lib/plaid', () => ({
+// Only the network client is faked. plaidErrorCode / plaidErrorCodeOrNull are
+// pure and come through real, because the assertions below turn on exactly what
+// they decide: which failures report a Plaid code and which report SYNC_FAILED.
+vi.mock('@/lib/plaid', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/plaid')>()),
   plaidClient: {
     accountsBalanceGet: (...a: unknown[]) => mocks.accountsBalanceGet(...a),
     liabilitiesGet: (...a: unknown[]) => mocks.liabilitiesGet(...a),
@@ -191,6 +195,21 @@ describe('POST /api/plaid/sync — failure handling', () => {
     const body = await (await POST()).json()
 
     expect(body.failures[0].needsReauth).toBe(false)
+  })
+
+  it('does not pass an internal error message off as a failure code', async () => {
+    // `code` is rendered by the dashboard, so anything landing in it is shown
+    // to the user. A throw that isn't Plaid's — a failed write carrying a
+    // Postgres message, say — used to travel there verbatim.
+    setup()
+    mocks.accountsBalanceGet.mockRejectedValue(
+      new Error('duplicate key violates unique constraint "cards_plaid_account_id_key"')
+    )
+
+    const body = await (await POST()).json()
+
+    expect(body.failures[0].code).toBe('SYNC_FAILED')
+    expect(JSON.stringify(body)).not.toContain('constraint')
   })
 
   it('keeps balances when the optional liabilities call fails', async () => {

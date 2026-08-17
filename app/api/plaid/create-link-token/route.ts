@@ -22,7 +22,7 @@
 // See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
-import { plaidClient } from '@/lib/plaid'
+import { plaidClient, plaidErrorCode } from '@/lib/plaid'
 import { supabaseAdmin } from '@/lib/supabase'
 import { Products, CountryCode } from 'plaid'
 
@@ -86,14 +86,18 @@ export async function POST(request: Request) {
 
     return Response.json({ link_token: response.data.link_token })
   } catch (err: unknown) {
-    let plaidError: string = err instanceof Error ? err.message : String(err)
+    // The detail goes to the log, not to the browser. This route used to return
+    // Plaid's own error_message straight through, which is the one place in the
+    // app that leaked upstream error text — it can name the institution and
+    // echo request specifics, and the client can't act on any of it.
     if (err && typeof err === 'object' && 'response' in err) {
-      const axiosErr = err as { response: { data: { error_code?: string; error_message?: string } } }
-      const d = axiosErr.response?.data
-      console.error('Plaid error details:', JSON.stringify(d, null, 2))
-      if (d?.error_code) plaidError = `${d.error_code}: ${d.error_message ?? ''}`
+      const axiosErr = err as { response?: { data?: unknown } }
+      console.error('Plaid error details:', JSON.stringify(axiosErr.response?.data, null, 2))
     }
-    console.error('Plaid link token error:', plaidError)
-    return Response.json({ error: plaidError }, { status: 500 })
+    console.error('Plaid link token error:', plaidErrorCode(err))
+    return Response.json(
+      { error: 'Could not start the bank connection. Please try again.' },
+      { status: 502 }
+    )
   }
 }

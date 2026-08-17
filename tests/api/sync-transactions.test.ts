@@ -22,7 +22,11 @@ vi.mock('@/lib/supabase', () => ({
   supabaseForUser: () => mocks.supabase!.client,
 }))
 
-vi.mock('@/lib/plaid', () => ({
+// Only the network client is faked. plaidErrorCode / plaidErrorCodeOrNull are
+// pure and come through real, because the assertions below turn on exactly what
+// they decide: which failures report a Plaid code and which report SYNC_FAILED.
+vi.mock('@/lib/plaid', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/plaid')>()),
   plaidClient: {
     transactionsSync: (...a: unknown[]) => mocks.transactionsSync(...a),
   },
@@ -286,6 +290,17 @@ describe('POST /api/plaid/sync-transactions — failure handling', () => {
       needsConsent: true,
       pending: false,
     })
+  })
+
+  it('does not pass a failed upsert message off as a failure code', async () => {
+    // The route wraps a write failure as `Upsert failed: <postgres message>`.
+    // That reached the browser in the same field Plaid's codes use.
+    setup({ writeErrors: { transactions: { message: 'relation "transactions" does not exist' } } })
+
+    const body = await (await POST()).json()
+
+    expect(body.failures[0].code).toBe('SYNC_FAILED')
+    expect(JSON.stringify(body)).not.toContain('relation')
   })
 
   it('flags PRODUCT_NOT_READY as pending, not as a real failure', async () => {

@@ -17,7 +17,7 @@
 // See docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
-import { plaidClient } from '@/lib/plaid'
+import { plaidClient, plaidErrorCode, plaidErrorCodeOrNull } from '@/lib/plaid'
 import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 
 type Connection = {
@@ -29,13 +29,6 @@ type Connection = {
 type SyncResult =
   | { ok: true; institution: string; found: number }
   | { ok: false; institution: string; code: string }
-
-function errorCode(err: unknown): string {
-  const fromPlaid = (err as { response?: { data?: { error_code?: string } } })
-    ?.response?.data?.error_code
-  if (fromPlaid) return fromPlaid
-  return err instanceof Error ? err.message : 'UNKNOWN_ERROR'
-}
 
 async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
@@ -93,8 +86,9 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
 
     return { ok: true, institution, found: rows.length }
   } catch (err: unknown) {
-    const code = errorCode(err)
-    console.error(`Recurring sync failed for ${institution}: ${code}`)
+    console.error(`Recurring sync failed for ${institution}: ${plaidErrorCode(err)}`)
+    // Full detail logged above; only Plaid's public codes travel to the client.
+    const code = plaidErrorCodeOrNull(err) ?? 'SYNC_FAILED'
     return { ok: false, institution, code }
   }
 }

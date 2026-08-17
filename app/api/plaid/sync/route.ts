@@ -19,7 +19,7 @@
 // The reasoning is spelled out in docs/migrations/001-rls-write-policies.sql.
 
 import { auth } from '@clerk/nextjs/server'
-import { plaidClient } from '@/lib/plaid'
+import { plaidClient, plaidErrorCode, plaidErrorCodeOrNull } from '@/lib/plaid'
 import { supabaseAdmin, supabaseForUser } from '@/lib/supabase'
 import type { CreditCardLiability } from 'plaid'
 import { shouldKeepExistingLimit } from '@/lib/cards'
@@ -33,13 +33,6 @@ type Connection = {
 type SyncResult =
   | { ok: true; institution: string }
   | { ok: false; institution: string; code: string; needsReauth: boolean }
-
-function errorCode(err: unknown): string {
-  const fromPlaid = (err as { response?: { data?: { error_code?: string } } })
-    ?.response?.data?.error_code
-  if (fromPlaid) return fromPlaid
-  return err instanceof Error ? err.message : 'UNKNOWN_ERROR'
-}
 
 async function syncConnection(conn: Connection, userId: string): Promise<SyncResult> {
   const institution = conn.institution_name ?? 'Bank'
@@ -118,8 +111,11 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
 
     return { ok: true, institution }
   } catch (err: unknown) {
-    const code = errorCode(err)
-    console.error(`Sync failed for connection ${conn.id} (${institution}): ${code}`)
+    console.error(
+      `Sync failed for connection ${conn.id} (${institution}): ${plaidErrorCode(err)}`
+    )
+    // Full detail logged above; only Plaid's public codes travel to the client.
+    const code = plaidErrorCodeOrNull(err) ?? 'SYNC_FAILED'
     return {
       ok: false,
       institution,

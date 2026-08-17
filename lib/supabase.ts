@@ -32,6 +32,21 @@
 // read it while denying a browser, because both authenticate as the same
 // `authenticated` role. So the separation lives at the key level instead.
 //
+// Two layers hold that separation, and it's worth knowing they are different
+// mechanisms doing different jobs:
+//
+//   1. The key. Only supabaseAdmin (service_role) queries this table, enforced
+//      at review time by tests/rls-boundary.test.ts.
+//   2. The grant. docs/migrations/002-revoke-token-column.sql drops the
+//      table-level SELECT for `authenticated`/`anon` and grants back only the
+//      non-secret columns, so even a query that ignores rule 1 — or a browser
+//      using the public anon key with a valid Clerk token — is refused by
+//      Postgres rather than merely by convention.
+//
+// Layer 2 exists because layer 1 is a convention about code, and the token was
+// in fact readable from any signed-in browser until 002 ran. RLS policies scope
+// ROWS; only column grants scope COLUMNS.
+//
 // tests/rls-boundary.test.ts enforces that rule by sweeping the source: any
 // supabaseAdmin query against a table other than connected_accounts fails the
 // build. If you have a genuine new case — a cron job with no user session, say

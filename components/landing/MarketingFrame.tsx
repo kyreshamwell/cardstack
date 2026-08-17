@@ -46,7 +46,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion, useReducedMotion } from 'motion/react'
+import { animate, motion, useMotionValue, useReducedMotion } from 'motion/react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { AppShell } from '@/components/dashboard/AppShell'
 import { DarkModeToggle } from '@/components/DarkModeToggle'
 import { PrivacyToggle } from '@/components/cards/PrivacyToggle'
@@ -57,6 +58,15 @@ import { DemoDashboard } from '@/components/demo/DemoDashboard'
 // Order on the strip, left to right. The index is the whole routing rule.
 const PANELS = ['demo', 'landing', 'auth'] as const
 type PanelName = (typeof PANELS)[number]
+
+// The width at which the layout stops being a phone and starts being the fixed
+// desktop viewport. Kept in step with Tailwind's `xl:` prefix by hand, because
+// the panels below need the same number in JS that the classes use in CSS.
+const DESKTOP = '(min-width: 1280px)'
+
+// `useLayoutEffect` warns when React renders on the server. The slide it drives
+// only ever starts from a click, so on the server there is nothing to run.
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect
 
 function panelForPath(pathname: string): PanelName {
   if (pathname.startsWith('/demo')) return 'demo'
@@ -93,7 +103,88 @@ export function MarketingFrame({ now }: { now: number }) {
   // of visible bounce — this carries a whole dashboard across the screen, and
   // overshoot at that size reads as a mistake rather than a flourish.
   const spring = { type: 'spring' as const, stiffness: 260, damping: 34, mass: 0.9 }
-  const move = reduce ? { duration: 0 } : spring
+
+  // ── Making the slide work below xl ────────────────────────────────────────
+  //
+  // At rest on a phone only the ACTIVE panel is in flow (see Panel), because
+  // all three contributing height would leave the short landing page with a
+  // screenful of the dashboard's empty scroll underneath it. One panel in flow
+  // means there is no strip to slide: translating by -100% per index would just
+  // push the only visible panel off screen, which is why the CSS pinned the
+  // track to `transform: none` and the transition was desktop-only.
+  //
+  // So the strip is now assembled for the duration of the move and taken apart
+  // again afterwards:
+  //
+  //   1. scroll to the top, so collapsing the document height can't yank the
+  //      content out from under the slide
+  //   2. put every panel back in flow and pin the track to the height it can
+  //      actually afford — one viewport, exactly what the desktop always has
+  //   3. jump the track to where the OLD panel was, then spring to the new one
+  //   4. on arrival, drop back to one panel in flow with the track at 0%, which
+  //      is where the new panel already is on screen — so the teardown is
+  //      invisible and normal document scrolling resumes
+  //
+  // Rest state is untouched by all of this, which is what keeps it safe: the
+  // server renders exactly what it rendered before, `sliding` can only become
+  // true after a click, and the phone still scrolls the document, not a box.
+  const x = useMotionValue(offset)
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [sliding, setSliding] = useState(false)
+  const [lockHeight, setLockHeight] = useState<number | null>(null)
+  // A ref as well as state, because a second click can arrive before React has
+  // re-rendered the first one and the effect has to know it's already mid-move.
+  const slidingRef = useRef(false)
+  const prevIndex = useRef(index)
+
+  useIsomorphicLayoutEffect(() => {
+    const from = prevIndex.current
+    if (from === index) return
+    prevIndex.current = index
+
+    if (reduce) {
+      x.set(offset)
+      return
+    }
+
+    // Desktop: all three panels are always in flow and the track is already
+    // sitting at `from`. There is nothing to assemble — just move it.
+    if (window.matchMedia(DESKTOP).matches) {
+      const run = animate(x, offset, spring)
+      return () => run.stop()
+    }
+
+    const track = trackRef.current
+    if (!track) return
+
+    // Only on the first step of a move. If a second click lands mid-flight the
+    // track is already built and already carrying a transform — re-jumping it
+    // to `from` would snap backwards before setting off again.
+    if (!slidingRef.current) {
+      window.scrollTo(0, 0)
+      // Measured after the scroll, so `top` is the un-scrolled offset: whatever
+      // is left of the viewport below the nav.
+      const top = track.getBoundingClientRect().top
+      setLockHeight(Math.max(240, Math.round(window.innerHeight - top)))
+      x.jump(`${-from * 100}%`)
+    }
+    slidingRef.current = true
+    setSliding(true)
+
+    const run = animate(x, offset, {
+      ...spring,
+      onComplete: () => {
+        slidingRef.current = false
+        setSliding(false)
+        setLockHeight(null)
+        x.jump('0%')
+      },
+    })
+    return () => run.stop()
+    // `spring` is a literal rebuilt every render and never changes; including it
+    // would restart the animation on every unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index, offset, reduce, x])
 
   return (
     <AppShell
@@ -188,7 +279,6 @@ export function MarketingFrame({ now }: { now: number }) {
       */}
       <div className="relative flex min-h-0 flex-1 flex-col overflow-x-clip xl:block xl:h-full xl:flex-none xl:overflow-clip">
         <motion.div
-          animate={{ x: offset }}
           // `flex-1` below xl so the track fills whatever height main has, and
           // default `items-stretch` so the visible panel fills it in turn. A
           // percentage `min-h-full` on the panel can't do this — the track's
@@ -196,19 +286,33 @@ export function MarketingFrame({ now }: { now: number }) {
           // nothing, which left the landing hero collapsed to its content and
           // parked at the top of a much taller screen.
           className="filmstrip-track flex flex-1 xl:h-full xl:flex-none"
-          // No enter animation: on a cold load the strip must already be at the
-          // right offset, or /demo would slide in from nowhere on first paint.
-          initial={false}
-          style={{ willChange: 'transform' }}
-          transition={move}
+          // Read by the CSS that pins the track at rest below xl. Only while
+          // this says "true" is the transform below allowed to apply there.
+          data-sliding={sliding ? 'true' : 'false'}
+          ref={trackRef}
+          // A motion value rather than `animate`, because below xl the move has
+          // to be jumped to its starting offset in the same frame the strip is
+          // assembled — declarative `animate` would spring from wherever the
+          // track was instead. No enter animation either way: on a cold load
+          // the strip must already be at the right offset, or /demo would slide
+          // in from nowhere on first paint.
+          style={{
+            x,
+            willChange: 'transform',
+            // Below xl, for the length of the move only: one viewport tall, so
+            // an incoming dashboard three screens long can't stretch the
+            // document mid-slide. `flex: none` because the `flex-1` above would
+            // otherwise grow straight past it.
+            ...(lockHeight != null ? { height: lockHeight, flex: 'none' } : null),
+          }}
         >
-          <Panel active={onDemo} name="demo">
+          <Panel active={onDemo} name="demo" sliding={sliding}>
             <DemoDashboard now={now} />
           </Panel>
-          <Panel active={panel === 'landing'} name="landing">
+          <Panel active={panel === 'landing'} name="landing" sliding={sliding}>
             <LandingHero />
           </Panel>
-          <Panel active={onAuth} name="auth">
+          <Panel active={onAuth} name="auth" sliding={sliding}>
             <AuthPanel active={onAuth} mode={pathname.startsWith('/sign-up') ? 'sign-up' : 'sign-in'} />
           </Panel>
         </motion.div>
@@ -231,10 +335,12 @@ function Panel({
   active,
   children,
   name,
+  sliding,
 }: {
   active: boolean
   children: React.ReactNode
   name: string
+  sliding: boolean
 }) {
   return (
     <div
@@ -251,9 +357,16 @@ function Panel({
       // all times, so on a phone — where the document height IS the tallest
       // panel — an inactive dashboard would leave the landing page with a
       // screenful of empty scroll below it.
-      className={`min-h-0 w-full shrink-0 overflow-x-clip xl:h-full xl:overflow-clip ${
-        active ? '' : 'hidden xl:block'
-      }`}
+      //
+      // The exception is `sliding`: during a move below xl every panel rejoins
+      // the flow so there is a strip to translate, and the track pins itself to
+      // one viewport for exactly as long as that lasts. Clipping goes to both
+      // axes for the same window — the track's height is definite then, so this
+      // can't hit the `min-height: auto` collapse that makes a scroll container
+      // stop a page growing.
+      className={`min-h-0 w-full shrink-0 xl:h-full xl:overflow-clip ${
+        sliding ? 'overflow-clip' : 'overflow-x-clip'
+      } ${active || sliding ? '' : 'hidden xl:block'}`}
       // Belt and braces with the overflow-clip above.
       //
       // The dashboard's scroll regions use `-mx-1 px-1` so their content sits

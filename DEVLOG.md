@@ -139,3 +139,73 @@ rebuild of everything a signed-out visitor sees.
 - [ ] Background sync (Vercel cron) so data updates when the app isn't open
 - [ ] Deploy: domain, production Clerk, Plaid production application
 
+
+---
+
+## 2026-08-17 — The filmstrip slide on phones and iPads
+
+### Found
+
+The demo transition was invisible on every phone and on all but one iPad, and
+it was not a Safari or Motion failure — Motion was running the whole time,
+writing `translateX(-95.87%)` inline every frame while the CSS threw it away.
+
+Measured in a real browser, sampling the demo panel's x-position each frame
+across the navigation:
+
+| Viewport | Width | Before |
+|---|---|---|
+| iPhone 15 Pro | 393 | 2 positions — a snap |
+| iPad mini portrait | 744 | 2 positions |
+| iPad Air 11" portrait | 820 | 2 positions |
+| iPad Pro 13" portrait | 1024 | 2 positions |
+| iPad Air 11" landscape | 1180 | 2 positions |
+| iPad Pro 13" landscape | 1366 | 40 positions — slid |
+| Laptop | 1512 | 40 positions — slid |
+
+The cutoff is `xl` (1280px), so a 13" iPad Pro in landscape was the only tablet
+on the working side of it.
+
+### Built
+
+- **The slide now runs below `xl`.** The strip is assembled for the length of a
+  move and taken apart again: scroll to top, put every panel back in flow, pin
+  the track to one viewport, jump to where the old panel was, spring to the new
+  one, then drop back to a single panel at 0% — which is where it already is on
+  screen, so the teardown is invisible.
+- `.filmstrip-track` keeps its `transform: none !important` at rest and only
+  releases it while `data-sliding="true"`. Rest state stays CSS-driven so the
+  server render and first paint are unchanged and nothing can flash at the wrong
+  offset before hydration knows the screen width.
+- An e2e test at 375px asserting both halves — that the panel travels rather
+  than teleports, and that it lands back on one panel, no transform, no pinned
+  height.
+
+All seven viewports above now slide. Desktop is untouched: same spring, same
+offsets, three panels in flow at rest as before.
+
+### Decided
+
+| Decision | Why |
+|---|---|
+| Assemble the strip per move, don't keep it assembled | Three panels permanently in flow is the empty-scroll bug the `hidden` was added to fix |
+| Pin the track to one viewport mid-slide | Otherwise an incoming dashboard three screens tall stretches the document while it moves |
+| Keep rest state in CSS, not JS | It's what SSR renders; a JS-decided offset flashes the wrong panel before hydration |
+| Scroll to top before moving | Collapsing the document height under a scrolled page yanks the content out from under the slide |
+
+### Learned
+
+- `!important` under a media query is easy to forget is there. The animation
+  looked broken on mobile for months while the animation library was in fact
+  running perfectly — the override was silently discarding it every frame.
+- A cold Next dev server can take longer to compile `/demo` than a fixed
+  100-frame rAF sampler lasts, which reads exactly like "the animation didn't
+  run". Sample until told to stop, not for a fixed count.
+
+### Next session
+
+- [ ] Card stack is `hidden lg:block` — five cards ship in the HTML and are
+      never painted below 1024px, and on tablets above it the tilt and fan are
+      wired to `onMouseMove`, so touch gets a permanently closed stack
+- [ ] Hover styles need `@media (hover: hover)` guards — they misfire and stick
+      after a tap on touch devices

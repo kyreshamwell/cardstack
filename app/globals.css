@@ -215,20 +215,31 @@ body {
 }
 
 /*
- * The filmstrip is a desktop device only.
+ * Below xl the filmstrip only exists while it is moving.
  *
- * Below xl the panels are hidden rather than translated (see Panel), so the
+ * At REST the panels are hidden rather than translated (see Panel), so the
  * track must not carry a transform — with one panel in flow, translating by
  * -100% per index would simply push it off screen. `!important` because Motion
- * writes the transform inline.
+ * writes the transform inline, and this has to win.
  *
  * They're hidden rather than height-capped because a `max-height` percentage
  * can't resolve against an auto-height parent: the off-screen dashboard kept
  * contributing its full height and gave the landing page a screenful of empty
  * scroll underneath it.
+ *
+ * `:not([data-sliding='true'])` is what lets the transition happen anyway.
+ * MarketingFrame flips that attribute for the length of a move, during which
+ * every panel is back in flow and the track is pinned to one viewport — so
+ * there IS a strip to translate and the transform means what it does on
+ * desktop. The moment it settles the attribute clears, the override returns,
+ * and the phone is back to one panel and ordinary document scrolling.
+ *
+ * Keeping rest state pinned in CSS rather than in JS is deliberate: it's what
+ * the server renders and what survives to first paint, so no panel can flash
+ * at the wrong offset before hydration decides how wide the screen is.
  */
 @media (max-width: 1279px) {
-  .filmstrip-track {
+  .filmstrip-track:not([data-sliding='true']) {
     transform: none !important;
   }
 }

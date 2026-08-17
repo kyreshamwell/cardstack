@@ -179,9 +179,17 @@ the tabs, and the **document** scrolling rather than any inner box.
 - **A percentage `max-height` can't cap an auto-height sibling**, so off-screen
   panels are `hidden` below `xl` rather than height-capped — otherwise the
   off-screen dashboard gives the landing page a screenful of empty scroll.
-- **The filmstrip is desktop-only.** With one panel in flow, translating -100%
-  per index pushes it off screen, so `.filmstrip-track` gets
-  `transform: none !important` under a media query.
+- **Below `xl` the filmstrip only exists while it is moving.** At rest one panel
+  is in flow, and translating -100% per index would push that one off screen —
+  so `.filmstrip-track:not([data-sliding='true'])` gets
+  `transform: none !important` under a media query. For the length of a move,
+  `MarketingFrame` sets `data-sliding`, puts every panel back in flow and pins
+  the track to one viewport, which is the same arrangement desktop has
+  permanently; on arrival it tears that down and the phone returns to one panel
+  and ordinary document scrolling. Rest state stays pinned in CSS rather than in
+  JS deliberately — it is what the server renders and what survives to first
+  paint, so no panel can flash at the wrong offset before hydration has decided
+  how wide the screen is.
 
 ---
 

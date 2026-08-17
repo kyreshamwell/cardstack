@@ -414,6 +414,66 @@ test.describe('phone layout', () => {
     // Centred to within a reasonable margin, rather than pinned to either end.
     expect(Math.abs(gaps.above - gaps.below)).toBeLessThan(60)
   })
+
+  // The filmstrip used to be desktop-only. Below xl the inactive panels were
+  // hidden and the track pinned to `transform: none`, so a phone got the panel
+  // swap with none of the motion — measured on this viewport as exactly two
+  // positions, the before and the after, with nothing in between.
+  //
+  // Both halves are asserted here, because either one alone is a bug: a slide
+  // that never tears itself down leaves the phone carrying three panels of
+  // document height, and a teardown with no slide is the original defect back
+  // again.
+  test('the demo slides in, then hands the page back to the document', async ({ page }) => {
+    await page.goto('/')
+    await expect(activePanel(page).getByRole('heading', { level: 1 })).toBeVisible()
+
+    // Sample the demo panel's position every frame across the navigation.
+    // Unbounded rather than a fixed frame count: a cold dev server can take
+    // seconds to compile /demo, and a cap short enough to be useful is also
+    // short enough to expire before the move starts.
+    await page.evaluate(() => {
+      const w = window as unknown as { __x: number[]; __stop: boolean }
+      w.__x = []
+      w.__stop = false
+      const tick = () => {
+        const demo = document.querySelector('[data-panel="demo"]')
+        if (demo) w.__x.push(Math.round(demo.getBoundingClientRect().x))
+        if (!w.__stop && w.__x.length < 100_000) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    })
+
+    await page.locator('[data-panel="landing"] a[href="/demo"]').first().click()
+    await expect(activePanel(page).locator('[data-card-id]').first()).toBeVisible()
+    // The attribute clears when the spring settles, which is the strip's own
+    // signal that it has finished and dismantled itself.
+    await expect(page.locator('.filmstrip-track')).toHaveAttribute('data-sliding', 'false')
+
+    const travelled = await page.evaluate(() => {
+      const w = window as unknown as { __x: number[]; __stop: boolean }
+      w.__stop = true
+      return new Set(w.__x).size
+    })
+    expect(travelled, 'the demo panel should travel, not teleport').toBeGreaterThan(3)
+
+    // Landed: one panel in flow, no transform, no pinned height — i.e. exactly
+    // the resting layout the other tests in this block depend on.
+    const rest = await page.evaluate(() => {
+      const track = document.querySelector('.filmstrip-track') as HTMLElement
+      return {
+        panelsInFlow: [...document.querySelectorAll('[data-panel]')].filter(
+          (p) => getComputedStyle(p).display !== 'none'
+        ).length,
+        transform: getComputedStyle(track).transform,
+        pinnedHeight: track.style.height,
+      }
+    })
+
+    expect(rest.panelsInFlow).toBe(1)
+    expect(rest.transform).toBe('none')
+    expect(rest.pinnedHeight).toBe('')
+  })
 })
 
 test.describe('route protection', () => {

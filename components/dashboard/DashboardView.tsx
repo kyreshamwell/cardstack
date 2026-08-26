@@ -1,7 +1,7 @@
 'use client'
 // components/dashboard/DashboardView.tsx
 //
-// The dashboard itself — every pixel of it, and no data fetching.
+// The dashboard itself: every pixel of it, and no data fetching.
 //
 // This used to live inline in app/(dashboard)/dashboard/page.tsx, which meant
 // the demo on the landing page had to be a separate lookalike. It drifted, of
@@ -10,12 +10,12 @@
 //
 // Splitting the view from the query fixes that at the root. The real page
 // queries Supabase and passes rows in; the demo passes fixtures in. Both render
-// THIS component, so the demo cannot fall behind the app — and if the dashboard
+// THIS component, so the demo cannot fall behind the app. And if the dashboard
 // breaks, /demo breaks with it, in public, where Playwright can see it without
 // credentials.
 //
-// The seams are the ReactNode props. Everything that needs a network — the
-// toolbar buttons, per-card actions, the limit editor — is injected rather than
+// The seams are the ReactNode props. Everything that needs a network (the
+// toolbar buttons, per-card actions, the limit editor) is injected rather than
 // imported, because those are exactly the things the demo has to replace.
 
 import { useEffect, useState, type ReactNode } from 'react'
@@ -44,7 +44,7 @@ const TABS: { key: Tab; label: string }[] = [
 /**
  * True below the `xl` breakpoint, where the desktop grid stops working.
  *
- * Starts false so server and first client render agree — a phone therefore
+ * Starts false so server and first client render agree. A phone therefore
  * paints the desktop layout for one frame before switching. The alternative is
  * rendering both trees and hiding one in CSS, which mounts two of every chart
  * and list and duplicates `data-card-id` across the document.
@@ -84,7 +84,7 @@ export interface DashboardViewProps {
   actionsById?: Record<string, ReactNode>
   /** Card id → a limit editor replacing the plain limit figure. */
   limitControlById?: Record<string, ReactNode>
-  /** Appended under the card list — consent prompts in the app, a nudge in the demo. */
+  /** Appended under the card list: consent prompts in the app, a nudge in the demo. */
   belowCards?: ReactNode
   /** Rendered when the user has no cards at all. */
   emptyState?: ReactNode
@@ -92,7 +92,7 @@ export interface DashboardViewProps {
    * Shows the short explanations under section labels.
    *
    * On for the demo, off for the real dashboard. The demo is a teaching
-   * surface — someone lands on it knowing nothing about the product, so the
+   * surface. Someone lands on it knowing nothing about the product, so the
    * one genuinely non-obvious idea in it (utilization reports at statement
    * close, not at the due date) has to be stated. On your own dashboard you
    * already know, and a permanent explainer is clutter you can't dismiss.
@@ -170,15 +170,15 @@ export function DashboardView({
   if (cards.length === 0) return <>{emptyState}</>
 
   // Highest utilization first, so whatever needs attention is at the top.
-  // Sorts render order only — colorById is keyed off the original creation
+  // Sorts render order only. colorById is keyed off the original creation
   // order, so a card keeps its color as balances move.
   const sortedCards = sortCardsForDisplay(cards)
 
   // ── Regions ───────────────────────────────────────────────────────────────
   //
   // Built once as values, then placed by whichever layout is active. Rendering
-  // both layouts and hiding one with CSS would mount two of everything — two
-  // charts, two transaction lists, duplicate `data-card-id` nodes — so only one
+  // both layouts and hiding one with CSS would mount two of everything (two
+  // charts, two transaction lists, duplicate `data-card-id` nodes) so only one
   // tree is ever in the DOM.
 
   const syncedLine = lastSyncedAt ? `Updated ${formatRelativeTime(new Date(lastSyncedAt))}` : null
@@ -218,8 +218,8 @@ export function DashboardView({
     <>
       {/*
         Named for the outcome, not the mechanic. "Pay before close" said when to
-        act but never what for, and the figure underneath it was read as a bill
-        — it sits alongside a minimum payment and a statement balance for the
+        act but never what for, and the figure underneath it was read as a bill.
+        It sits alongside a minimum payment and a statement balance for the
         same card, and nothing distinguished it from either.
       */}
       <p className={`label ${explain ? '' : 'mb-1'}`}>Lower reported utilization</p>
@@ -236,7 +236,7 @@ export function DashboardView({
 
   // The tab bar already says "Cards", so repeating it below costs a row and
   // says nothing. Same for "Recent activity". With the label and the sync time
-  // both gone, the toolbar fits on one line instead of wrapping onto two —
+  // both gone, the toolbar fits on one line instead of wrapping onto two, and
   // three rows of chrome before the first card become one.
   const cardsHeader = isNarrow ? (
     <div className="mb-2 flex flex-wrap items-center gap-1.5">{toolbar}</div>
@@ -267,7 +267,7 @@ export function DashboardView({
 
   const activityHeader = (
     <div className="flex items-baseline justify-between gap-3 mb-1">
-      {/* Label hidden on phones — the tab is the label. The count isn't
+      {/* Label hidden on phones, because the tab is the label. The count isn't
           duplicated anywhere, so it stays. */}
       <p className={`label ${isNarrow ? 'sr-only' : ''}`}>Recent activity</p>
       {newSinceCount > 0 && (
@@ -309,16 +309,16 @@ export function DashboardView({
   // ── Phone: one region at a time ───────────────────────────────────────────
   //
   // The desktop model does not survive a small screen. Its regions are sized as
-  // fractions of a fixed viewport, and at phone height those fractions collapse
-  // — measured on a 375×812 viewport, one panel was 0px tall and another was
-  // 37px holding 998px of content, with the labels overlapping the rows beneath
-  // them. Four nested scrollers on a touch screen is also the exact thing that
-  // eats a swipe you meant for the page.
+  // fractions of a fixed viewport, and at phone height those fractions
+  // collapse. Measured on a 375×812 viewport, one panel was 0px tall and
+  // another was 37px holding 998px of content, with the labels overlapping the
+  // rows beneath them. Four nested scrollers on a touch screen is also the
+  // exact thing that eats a swipe you meant for the page.
   //
   // Tabs instead: one region at a time, and `flow-scroll` neutralises the inner
   // `.scroll-y` regions so nothing scrolls but the page.
   //
-  // No scroll container at all — the DOCUMENT scrolls.
+  // No scroll container at all: the DOCUMENT scrolls.
   //
   // This went through two worse versions: an inner panel with the balance and
   // tabs pinned outside it, then one full-height inner scroller. Both stopped
@@ -335,13 +335,13 @@ export function DashboardView({
 
         {/*
           Sticky to the document now, so it pins to the top of the screen as
-          the nav scrolls away — the switch stays reachable no matter how far
+          the nav scrolls away, so the switch stays reachable no matter how far
           down you are.
 
           No negative margin bleeding it into the shell's padding: the rows sit
           inside that padding too, so nothing passes through the outer edge for
           it to cover, and a bar wider than its container adds horizontal
-          scroll — on a phone that means the view can be swiped sideways.
+          scroll, and on a phone that means the view can be swiped sideways.
         */}
         <div className="sticky top-0 z-10 bg-ground py-2">
           <div className="flex gap-1 rounded-xl bg-raised p-1" role="tablist">
@@ -377,7 +377,7 @@ export function DashboardView({
           )}
           {tab === 'insights' && (
             <>
-              {/* Sized to the panel rather than the 320px desktop rail — at 180
+              {/* Sized to the panel rather than the 320px desktop rail. At 180
                   it used barely half the width available to it here. */}
               <BalancePie size={240} slices={pieSlices} />
               <div className="mt-8">{utilization}</div>
@@ -401,7 +401,7 @@ export function DashboardView({
 
       {/*
         One composed page. Regions are separated by whitespace and a single
-        quiet label each — no boxes, no rules carving the page into cells.
+        quiet label each. No boxes, no rules carving the page into cells.
         Nothing scrolls except a list that genuinely outgrows its space.
       */}
       <div className="h-full min-h-0 grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-x-12 gap-y-8">

@@ -4,7 +4,7 @@
 // the way back out.
 //
 // It listens on `window` rather than taking props because the chart and the
-// card rows are far apart in the tree — the chart dispatches `card:focus` and
+// card rows are far apart in the tree. The chart dispatches `card:focus` and
 // this hides every `[data-card-id]` that doesn't match.
 //
 // Two things here are deliberate:
@@ -31,8 +31,8 @@ export function CardFocusManager() {
   const [focused, setFocused] = useState<Focused | null>(null)
 
   // The listener is registered once, so it can't read `focused` from the
-  // closure — it would always see null. A ref carries the current value in so
-  // a repeat click on the same card can be told apart from a switch.
+  // closure, where it would always see null. A ref carries the current value
+  // in, so a repeat click on the same card can be told apart from a switch.
   const focusedRef = useRef<Focused | null>(null)
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export function CardFocusManager() {
   // Applied in an effect rather than inside the handler, which matters on the
   // phone layout: there the chart and the card list live in different tabs, so
   // the rows do not exist in the DOM at the moment the event fires. Running
-  // after the commit means the tab switch and the filter land together —
+  // after the commit means the tab switch and the filter land together. When
   // handled imperatively, the focus was simply lost.
   useEffect(() => {
     const id = focused?.id ?? null

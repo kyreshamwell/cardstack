@@ -2,8 +2,8 @@
 -- Run this in Supabase: SQL Editor → New query → paste → Run
 --
 -- Two tables for Phase 1:
---   connected_accounts  — one row per bank connection (Plaid "Item")
---   cards               — one row per credit card returned by Plaid
+--   connected_accounts: one row per bank connection (Plaid "Item")
+--   cards:              one row per credit card returned by Plaid
 --
 -- Why separate tables?
 --   One bank (e.g. Chase) can have multiple cards.
@@ -13,12 +13,12 @@
 create extension if not exists "uuid-ossp";
 
 -- ─── connected_accounts ─────────────────────────────────────────────────────────
--- Represents a single Plaid "Item" — one bank login.
+-- Represents a single Plaid "Item", i.e. one bank login.
 -- A user who connects Chase gets one row here, even if they have 3 Chase cards.
 create table connected_accounts (
   id                uuid        primary key default uuid_generate_v4(),
   user_id           text        not null,       -- Clerk user ID, e.g. "user_2abc123"
-  plaid_access_token text       not null,       -- secret — NEVER expose to the client
+  plaid_access_token text       not null,       -- secret: NEVER expose to the client
   plaid_item_id     text        not null unique, -- Plaid's ID for this connection
   institution_name  text,                       -- e.g. "Chase"
   institution_id    text,                       -- e.g. "ins_3"
@@ -52,7 +52,7 @@ create table cards (
 --
 -- That changed. The app now queries as the signed-in user via supabaseForUser()
 -- in lib/supabase.ts, so these policies are live. The INSERT/UPDATE/DELETE
--- policies they need live in docs/migrations/001-rls-write-policies.sql — RLS
+-- policies they need live in docs/migrations/001-rls-write-policies.sql. RLS
 -- with a SELECT-only policy DENIES every write, so run that migration too.
 alter table connected_accounts enable row level security;
 alter table cards enable row level security;
@@ -89,7 +89,7 @@ alter table cards add column if not exists last_payment_amount  numeric(12,2);
 alter table cards add column if not exists last_payment_date    date;
 alter table cards add column if not exists is_overdue           boolean;
 
--- statement balance — what you owe to avoid interest.
+-- statement balance: what you owe to avoid interest.
 -- Distinct from balance_current, which also includes charges made AFTER the
 -- statement closed (those belong to next month's statement, not this one).
 alter table cards add column if not exists statement_balance    numeric(12,2);
@@ -131,7 +131,7 @@ create index if not exists transactions_date_idx on transactions (transaction_da
 
 -- ─── Recurring charges ───────────────────────────────────────────────────────────
 -- Plaid detects recurring streams from transaction history (/transactions/recurring/get).
--- We store the outflow streams — subscriptions and other repeating charges.
+-- We store the outflow streams: subscriptions and other repeating charges.
 -- Amounts arrive nested as { amount, iso_currency_code }, flattened here.
 create table if not exists recurring_charges (
   id                  uuid        primary key default uuid_generate_v4(),
@@ -163,7 +163,7 @@ create index if not exists recurring_card_idx on recurring_charges (card_id);
 
 -- ─── Per-user state ──────────────────────────────────────────────────────────────
 -- Drives "what's new since you last looked". Compared against transactions.created_at
--- (when WE first stored a row), not transaction_date — a charge dated last Tuesday
+-- (when WE first stored a row), not transaction_date. A charge dated last Tuesday
 -- that only synced today is still new *to you*.
 create table if not exists user_state (
   user_id        text        primary key,
@@ -182,6 +182,6 @@ alter table transactions add column if not exists source text not null default '
 
 -- Marks a credit limit the user typed in themselves. Plaid returns null for the
 -- limit on plenty of cards, and a sync that wrote that null straight through
--- erased whatever the user had entered — every 30 minutes, once auto-refresh
+-- erased whatever the user had entered, every 30 minutes, once auto-refresh
 -- existed. When this is true, sync leaves balance_limit alone.
 alter table cards add column if not exists limit_is_manual boolean not null default false;

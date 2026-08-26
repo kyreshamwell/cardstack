@@ -3,16 +3,16 @@
 // Maps bank names → payment destinations.
 //
 // Two mechanisms exist for opening a bank's mobile app from a link:
-//   1. Universal Links — a normal https:// URL that iOS intercepts if the
+//   1. Universal Links: a normal https:// URL that iOS intercepts if the
 //      path is listed in the bank's public /.well-known/apple-app-site-association
-//      file. Verifiable by fetching that file directly — no guessing.
-//   2. Custom URL schemes (bankname://) — undocumented and NOT guessable.
+//      file. Verifiable by fetching that file directly, with no guessing.
+//   2. Custom URL schemes (bankname://): undocumented and NOT guessable.
 //      Only include one here if it's been empirically confirmed to open the
 //      real app on a real device. A guessed scheme that doesn't exist just
-//      silently fails or shows an OS error — worse than no attempt at all.
+//      silently fails or shows an OS error, which is worse than no attempt.
 //
 // Do not add an appScheme for a bank without a confirmed, working test.
-// Do not assume a bank's homepage is Universal-Link-eligible — check its
+// Do not assume a bank's homepage is Universal-Link-eligible. Check its
 // apple-app-site-association file first.
 
 interface InstitutionInfo {
@@ -35,7 +35,7 @@ const NAME_PATTERNS: Array<{ pattern: RegExp } & InstitutionInfo> = [
   {
     pattern: /chase/i,
     // This exact path is listed in Chase's public apple-app-site-association
-    // file, so iOS will offer to open the Chase app automatically — no
+    // file, so iOS will offer to open the Chase app automatically, with no
     // custom scheme needed.
     webUrl: 'https://www.chase.com/digital/mobile-banking',
   },

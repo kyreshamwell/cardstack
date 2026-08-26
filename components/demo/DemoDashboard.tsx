@@ -4,7 +4,7 @@
 // The demo IS the dashboard: same DashboardView, fixture data instead of
 // Supabase rows, gated buttons instead of network ones.
 //
-// Body only — no shell. MarketingFrame owns the AppShell, so the nav never
+// Body only, no shell. MarketingFrame owns the AppShell, so the nav never
 // unmounts when the landing page slides to this, which is what makes the change
 // read as one frame moving rather than two pages swapping.
 //
@@ -19,7 +19,7 @@ import { getInstitutionInfo } from '@/lib/institutions'
 import { DemoGate, GatedButton } from '@/components/demo/DemoGate'
 import { buildDemoData, type DemoData } from '@/lib/demo-data'
 
-// Matched to the real buttons rather than approximated — a toolbar that sits a
+// Matched to the real buttons rather than approximated. A toolbar that sits a
 // pixel off is the tell that this isn't the actual app.
 const ICON_BUTTON =
   'flex items-center justify-center w-8 h-8 rounded-lg border border-line bg-ground text-ink-2 hover:bg-raised hover:text-ink transition-colors'
@@ -34,7 +34,7 @@ const SOLID_BUTTON =
  * "Pay this card" is a dead lookalike here, not the real PayCardButton. The
  * real one is an <a> to the bank's own site, and firing a sample visitor off to
  * chase.com from a fake Chase card is both confusing and not ours to do. It
- * renders identically — same colour, same size, same label — and does nothing.
+ * renders identically (same colour, same size, same label) and does nothing.
  */
 function demoActions(data: DemoData): Record<string, ReactNode> {
   const map: Record<string, ReactNode> = {}
@@ -72,7 +72,7 @@ function demoActions(data: DemoData): Record<string, ReactNode> {
 
 /**
  * @param now Timestamp the fixtures are built from. Supplied by the server
- *   render so the client hydrates against identical dates — see lib/demo-data.
+ *   render so the client hydrates against identical dates. See lib/demo-data.
  */
 export function DemoDashboard({ now }: { now: number }) {
   const data = useMemo(() => buildDemoData(now), [now])
@@ -87,7 +87,7 @@ export function DemoDashboard({ now }: { now: number }) {
           // the end of the list, where the other tabs finish cleanly on a row.
           <div className="mt-4 rounded-xl border border-line bg-raised p-4 xl:mt-4 xl:rounded-none xl:border-0 xl:border-t xl:bg-transparent xl:p-0 xl:pt-3">
             <p className="text-xs text-ink-2">
-              Sample data — five cards, two weeks of activity. Everything on this
+              Sample data: five cards, two weeks of activity. Everything on this
               screen is the real dashboard.
             </p>
             <Link

@@ -5,7 +5,7 @@
 // then reloads the page so the server component re-reads from Supabase.
 //
 // Why is this a client component?
-//   It needs onClick and loading state — both require interactivity.
+//   It needs onClick and loading state, and both require interactivity.
 //   The actual data fetching still happens server-side in the API route.
 
 import { useState } from 'react'
@@ -26,7 +26,7 @@ export function RefreshButton() {
     setLoading(true)
     setFailures([])
     try {
-      // Balances, transactions, and recurring charges refresh together —
+      // Balances, transactions, and recurring charges refresh together:
       // one button, one action.
       const [balanceRes, txRes] = await Promise.all([
         fetch('/api/plaid/sync', { method: 'POST' }),
@@ -38,7 +38,7 @@ export function RefreshButton() {
 
       // Recurring detection reads transaction history, so it runs after the
       // transaction sync rather than alongside it. A failure here is not worth
-      // interrupting the user over — the charges list just stays as it was.
+      // interrupting the user over. The charges list just stays as it was.
       fetch('/api/plaid/sync-recurring', { method: 'POST' })
         .then(() => router.refresh())
         .catch(() => {})
@@ -81,7 +81,7 @@ export function RefreshButton() {
   }
 
   // Previously the response was discarded, so a bank that failed to sync looked
-  // identical to a successful refresh — the spinner just stopped.
+  // identical to a successful refresh. The spinner just stopped.
   const hasFailures = failures.length > 0
   const failureText = hasFailures
     ? failures
@@ -102,7 +102,7 @@ export function RefreshButton() {
           loading
             ? 'Refreshing...'
             : hasFailures
-            ? `Some cards didn't update —\n${failureText}`
+            ? `Some cards didn't update:\n${failureText}`
             : 'Refresh balances'
         }
         aria-label="Refresh balances"

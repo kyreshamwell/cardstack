@@ -2,7 +2,7 @@
 //
 // Light/dark switch, shown on every public panel and in the signed-in app.
 //
-// It does NOT decide the initial theme — a blocking script in the root layout
+// It does NOT decide the initial theme. A blocking script in the root layout
 // does that before first paint, reading the same two sources in the same order
 // (a saved choice, else the device preference). Deciding it here would mean a
 // white flash on every load for anyone on a dark device. This only syncs
@@ -23,8 +23,8 @@ function getSystemPreference(): Mode {
 function applyMode(mode: Mode) {
   document.documentElement.classList.toggle('dark', mode === 'dark')
   // Keep Safari's top bar in sync with the app's dark mode (not the system
-  // preference). #000000 because that's what --ground is in the dark theme —
-  // this used to be the old slate #0f172a, so the browser chrome and the page
+  // preference). #000000 because that's what --ground is in the dark theme.
+  // This used to be the old slate #0f172a, so the browser chrome and the page
   // it framed were visibly different blacks.
   const meta = document.querySelector('meta[name="theme-color"]')
   if (meta) meta.setAttribute('content', mode === 'dark' ? '#000000' : '#ffffff')
@@ -34,7 +34,7 @@ export function DarkModeToggle() {
   const [mode, setMode] = useState<Mode>('light')
 
   useEffect(() => {
-    // The class is already correct — the blocking script in the root layout set
+    // The class is already correct: the blocking script in the root layout set
     // it before paint. This only syncs React's copy of the state so the icon
     // matches, and re-applies to cover the theme-color meta tag.
     const saved = localStorage.getItem('theme') as Mode | null
@@ -69,12 +69,12 @@ export function DarkModeToggle() {
       className="flex items-center gap-1.5 rounded-lg border border-line bg-ground px-3 py-1.5 text-sm font-medium text-ink-2 hover:bg-raised transition-colors"
     >
       {mode === 'dark' ? (
-        /* Sun — switch to light */
+        /* Sun: switch to light */
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 100 8 4 4 0 000-8z" />
         </svg>
       ) : (
-        /* Moon — switch to dark */
+        /* Moon: switch to dark */
         <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
         </svg>

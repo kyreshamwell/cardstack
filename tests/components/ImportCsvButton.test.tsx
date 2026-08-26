@@ -1,7 +1,7 @@
 // tests/components/ImportCsvButton.test.tsx
 //
 // The highest-consequence component in the app. Getting the sign convention
-// backwards doesn't throw or warn — it silently imports every purchase as a
+// backwards doesn't throw or warn. It silently imports every purchase as a
 // refund, which quietly understates what you owe. These tests pin that
 // behaviour in both directions and check the preview the user actually decides
 // from.
@@ -67,7 +67,7 @@ beforeEach(() => {
   }) as unknown as typeof fetch
 })
 
-describe('ImportCsvButton — opening', () => {
+describe('ImportCsvButton: opening', () => {
   it('renders nothing when there are no cards to import into', () => {
     const { container } = render(<ImportCsvButton cards={[]} />)
     expect(container).toBeEmptyDOMElement()
@@ -84,7 +84,7 @@ describe('ImportCsvButton — opening', () => {
   })
 })
 
-describe('ImportCsvButton — parsing and column mapping', () => {
+describe('ImportCsvButton: parsing and column mapping', () => {
   it('reports how many data rows the file has, excluding the header', async () => {
     await openWithFile()
     expect(screen.getByText(/statement\.csv · 3 rows/)).toBeInTheDocument()
@@ -116,7 +116,7 @@ describe('ImportCsvButton — parsing and column mapping', () => {
   })
 })
 
-describe('ImportCsvButton — sign convention', () => {
+describe('ImportCsvButton: sign convention', () => {
   it('defaults to treating negative numbers as purchases', async () => {
     await openWithFile()
 
@@ -164,7 +164,7 @@ describe('ImportCsvButton — sign convention', () => {
   })
 })
 
-describe('ImportCsvButton — submission', () => {
+describe('ImportCsvButton: submission', () => {
   it('posts to the import endpoint with the chosen card', async () => {
     const user = await openWithFile()
 

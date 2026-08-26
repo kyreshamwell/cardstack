@@ -1,5 +1,5 @@
 /*
- * globals.css — the single CSS entrypoint for the app.
+ * globals.css: the single CSS entrypoint for the app.
  *
  * Tailwind 4 is CSS-first: there is no tailwind.config.ts. Design tokens live
  * here.
@@ -12,7 +12,7 @@
  */
 
 @import "tailwindcss";
-/* Class-based dark mode — DarkModeToggle adds/removes .dark on <html> */
+/* Class-based dark mode: DarkModeToggle adds/removes .dark on <html> */
 @variant dark (&:where(.dark, .dark *));
 
 /* ─── Semantic tokens ─────────────────────────────────────────────────────── */
@@ -28,9 +28,9 @@
   --line: #e4e4e4;        /* hairline borders */
   --line-2: #d0d0d0;      /* emphasized borders */
 
-  /* Categorical card identity — validated against #ffffff on the adjacent
+  /* Categorical card identity, validated against #ffffff on the adjacent
      pairlist: worst CVD ΔE 9.1, normal-vision 19.6. Three slots sit under 3:1
-     contrast, so a swatch NEVER carries meaning alone — every one is rendered
+     contrast, so a swatch NEVER carries meaning alone. Every one is rendered
      beside the card's name. */
   --s1: #2a78d6;
   --s2: #eb6834;
@@ -39,7 +39,7 @@
   --s5: #e87ba4;
   --s6: #008300;
 
-  /* Status is reserved — never reused as a series color. */
+  /* Status is reserved, never reused as a series color. */
   --good: #0ca30c;
   --warning: #fab219;
   --critical: #d03b3b;
@@ -58,7 +58,7 @@
 
   --ground: #000000;      /* jet black */
   --raised: #0e0e0e;
-  /* Not pure white: #fff on #000 causes halation — the text visibly smears.
+  /* Not pure white: #fff on #000 causes halation, and the text visibly smears.
      This keeps the OLED black without the eye strain. */
   --ink: #ededed;
   --ink-2: #a0a0a0;
@@ -67,7 +67,7 @@
   --line-2: #333333;
 
   /* Same six hues, re-stepped for the dark band and validated against #000000.
-     All pass and all clear 3:1 here — pure black gives more contrast headroom
+     All pass and all clear 3:1 here, since pure black gives more headroom
      than the light theme does. */
   --s1: #3987e5;
   --s2: #d95926;
@@ -122,7 +122,7 @@
  *
  * Correct back when every page was a fixed viewport. Now that phones scroll the
  * document, `height: 100%` pins the body to exactly one screen while its
- * content carries on past it — the box ends at the fold.
+ * content carries on past it: the box ends at the fold.
  */
 html,
 body {
@@ -139,7 +139,7 @@ body {
  * The iOS bottom inset belongs INSIDE the app shell, not on <body>.
  *
  * The shell is a child of body, so an inset applied to body puts that strip
- * outside the shell's background — on a notched iPhone the home-indicator area
+ * outside the shell's background. On a notched iPhone the home-indicator area
  * is then painted by the browser canvas rather than by the app. It also made
  * body `viewport + inset` tall, which is a permanent few pixels of scroll on
  * pages that should fit exactly.
@@ -152,7 +152,7 @@ body {
 }
 
 /* Numbers that sit in columns line up; standalone display figures do not use
-   this — tabular digits make a large number look loose. */
+   this, because tabular digits make a large number look loose. */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
@@ -161,7 +161,7 @@ body {
 
 /*
  * The page itself never scrolls. Where a list is longer than its space, that
- * list scrolls on its own — quietly, with no boxes or dividers marking it off.
+ * list scrolls on its own, quietly, with no boxes or dividers marking it off.
  *
  * min-height: 0 is the load-bearing part: a flex/grid child refuses to shrink
  * below its content without it, and the whole page scrolls instead.
@@ -173,7 +173,7 @@ body {
   overscroll-behavior: contain;
 }
 
-/* Scrollbars stay out of the way — nothing here should read as a frame. */
+/* Scrollbars stay out of the way. Nothing here should read as a frame. */
 .scroll-y::-webkit-scrollbar {
   width: 8px;
 }
@@ -192,7 +192,7 @@ body {
  * The dashboard's regions each scroll independently on desktop, which is right
  * when they're sized as fractions of a fixed viewport. On a phone they're
  * stacked inside one scrolling tab panel, and a scroller inside a scroller is
- * what makes a swipe you meant for the page get eaten by a list instead —
+ * what makes a swipe you meant for the page get eaten by a list instead.
  * `overscroll-behavior: contain` on `.scroll-y` actively makes that worse.
  * Inside `.flow-scroll` the regions just lay out at their natural height and
  * the panel does all the scrolling.
@@ -203,7 +203,7 @@ body {
   overscroll-behavior: auto;
   /*
    * Also undo the `-mx-1 px-1` pair. That exists so a region's scrollbar can
-   * hang outside its content while the rows stay flush — but with no inner
+   * hang outside its content while the rows stay flush, but with no inner
    * scrollbar here there's nothing to make room for, and the negative margin
    * just pushes every row 4px past the panel's right edge. Measured: content
    * reaching 367px inside a 363px panel.
@@ -218,7 +218,7 @@ body {
  * Below xl the filmstrip only exists while it is moving.
  *
  * At REST the panels are hidden rather than translated (see Panel), so the
- * track must not carry a transform — with one panel in flow, translating by
+ * track must not carry a transform: with one panel in flow, translating by
  * -100% per index would simply push it off screen. `!important` because Motion
  * writes the transform inline, and this has to win.
  *
@@ -229,7 +229,7 @@ body {
  *
  * `:not([data-sliding='true'])` is what lets the transition happen anyway.
  * MarketingFrame flips that attribute for the length of a move, during which
- * every panel is back in flow and the track is pinned to one viewport — so
+ * every panel is back in flow and the track is pinned to one viewport, so
  * there IS a strip to translate and the transform means what it does on
  * desktop. The moment it settles the attribute clears, the override returns,
  * and the phone is back to one panel and ordinary document scrolling.
@@ -244,7 +244,7 @@ body {
   }
 }
 
-/* Group label — the only chrome a region gets. */
+/* Group label, the only chrome a region gets. */
 .label {
   font-size: 10.5px;
   font-weight: 600;
@@ -258,7 +258,7 @@ body {
 /*
  * Themed in CSS, not through `appearance.elements`.
  *
- * The elements API silently dropped every class we passed — Clerk rendered its
+ * The elements API silently dropped every class we passed. Clerk rendered its
  * own `cl-*` classes with none of ours alongside them. The `cl-*` names are
  * stable and documented for exactly this, and styling through them has a real
  * advantage here: our colours are CSS custom properties that re-step under
@@ -270,13 +270,13 @@ body {
  */
 
 /*
- * Clerk's card chrome is removed entirely — AuthPanel supplies the card.
+ * Clerk's card chrome is removed entirely, because AuthPanel supplies the card.
  *
  * `min-width: 0` on every one of these is the important part. Clerk's boxes
  * carry an intrinsic minimum width, so inside a narrower container they refuse
  * to shrink: the form overflowed the card, the field labels were sliced off at
  * the left edge, and cardBox's own shadow drew a second rounded rectangle
- * across ours. Width alone doesn't fix it — the minimum has to be released too.
+ * across ours. Width alone doesn't fix it: the minimum has to be released too.
  */
 .cl-rootBox,
 .cl-cardBox,
@@ -348,7 +348,7 @@ body {
    * Clerk draws its field outline as a box-shadow ring (`0 0 0 1px`) plus a
    * soft drop shadow. Ours is a real border, so leaving Clerk's in place
    * stacked two outlines a pixel apart and read as a pale halo down the edge
-   * of every input — most visible on the left, against the card's white.
+   * of every input, most visible on the left, against the card's white.
    * One outline only.
    */
   box-shadow: none !important;
@@ -360,7 +360,7 @@ body {
 }
 /*
  * Clerk hardcodes the placeholder to a dark slate at 65% opacity, and it does
- * not follow the theme — on the dark card that's near-black text on a
+ * not follow the theme, so on the dark card that's near-black text on a
  * near-black field. `opacity: 1` matters as much as the colour: without it the
  * browser's own placeholder fade stacks on top and mutes it again.
  */
@@ -403,7 +403,7 @@ body {
 }
 .cl-socialButtonsBlockButton,
 .cl-socialButtonsIconButton {
-  /* `raised` on a `ground` card — see the note in AuthPanel for why this
+  /* `raised` on a `ground` card. See the note in AuthPanel for why this
      direction and not the reverse. The border does most of the work in light
      mode, where raised-on-ground is only a 2% step, and all but disappears in
      dark, where the fill alone already separates them. */
@@ -440,7 +440,7 @@ body {
 
 /*
  * Apple's mark is the exception. Clerk serves these as <img> from its CDN
- * rather than inline SVG, so they can't inherit currentColor — and Apple's is
+ * rather than inline SVG, so they can't inherit currentColor, and Apple's is
  * a solid black glyph, which is simply invisible on a black button in dark
  * mode. Inverting turns it white, which is also what Apple's own branding
  * guidance calls for on dark backgrounds.
@@ -456,7 +456,7 @@ body {
 /*
  * The "Last used" pill Clerk hangs off whichever provider you signed in with
  * most recently. Untouched it renders as a hard white block half-overlapping
- * the button's top-right corner — very visible on a dark card, and the thing
+ * the button's top-right corner, very visible on a dark card, and the thing
  * that looked like a broken border. Positioned relative + overflow visible on
  * the button so it isn't sliced, and recoloured to the theme.
  */
@@ -481,7 +481,7 @@ body {
   align-items: center !important;
   display: flex !important;
   gap: 0.75rem !important;
-  /* Breathing room on both sides — butted against the provider buttons it
+  /* Breathing room on both sides. Butted against the provider buttons it
      reads as part of them rather than as a separator. */
   margin: 0.875rem 0 !important;
 }
@@ -520,7 +520,7 @@ body {
 
 /* ─── Clerk overrides ─────────────────────────────────────────────────────── */
 
-/* NavUserButton — Clerk's trigger is invisible but covers the pill for clicks */
+/* NavUserButton: Clerk's trigger is invisible but covers the pill for clicks */
 .nav-user-pill .cl-userButtonTrigger {
   position: absolute !important;
   inset: 0 !important;

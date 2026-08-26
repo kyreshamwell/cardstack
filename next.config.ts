@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   // which reaches it on the laptop's LAN address rather than localhost. Next
   // treats that as a cross-origin request for `/_next/*` and warns.
   //
-  // Dev only — this has no effect on a production build, where the app is
+  // Dev only. This has no effect on a production build, where the app is
   // served from its own origin.
   //
   // Two things worth knowing before editing this list:
@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
   //     that pinning whole addresses would break this every few weeks.
   //
   // The loopback literals are listed because only the NAME `localhost` is
-  // allowed implicitly — `127.0.0.1` and `[::1]` are ordinary hostnames to the
+  // allowed implicitly. `127.0.0.1` and `[::1]` are ordinary hostnames to the
   // matcher and would start being blocked the moment this key exists.
   //
   // Home routers hand out one of these three private ranges almost without

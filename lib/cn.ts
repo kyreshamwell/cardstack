@@ -1,4 +1,4 @@
-// lib/cn.ts — class-name merge helper.
+// lib/cn.ts: class-name merge helper.
 //
 // This lives apart from lib/utils.ts on purpose: components.json points
 // shadcn's "utils" alias here, so the CLI can't overwrite our own helpers

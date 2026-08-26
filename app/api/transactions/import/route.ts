@@ -4,8 +4,8 @@
 //
 // CSV rows land in the same table as Plaid ones, distinguished by source.
 // plaid_transaction_id is NOT NULL UNIQUE, so imported rows get a deterministic
-// synthetic ID built from their own contents — re-importing an overlapping file
-// updates those rows instead of duplicating them.
+// synthetic ID built from their own contents, so re-importing an overlapping
+// file updates those rows instead of duplicating them.
 
 import { auth } from '@clerk/nextjs/server'
 import { supabaseForUser } from '@/lib/supabase'
@@ -17,8 +17,8 @@ interface IncomingRow {
 }
 
 // Caps on what one request may carry. Nothing here is a security boundary in
-// the ownership sense — the caller is authenticated and can only write rows
-// they own — but "authenticated" is not "trusted with unbounded writes". The
+// the ownership sense, since the caller is authenticated and can only write
+// rows they own, but "authenticated" is not "trusted with unbounded writes". The
 // body arrives as one JSON array and Next puts no default limit on it, so
 // without these a single POST decides how much of the database it gets.
 //
@@ -32,7 +32,7 @@ const MAX_ROWS = 10_000
 // this is only here so the column can't be used as free storage.
 const MAX_DESCRIPTION = 500
 
-/** Stable ID for a CSV row — same row in, same ID out, so re-imports dedupe. */
+/** Stable ID for a CSV row: same row in, same ID out, so re-imports dedupe. */
 function syntheticId(cardId: string, row: IncomingRow): string {
   const slug = row.description
     .toLowerCase()

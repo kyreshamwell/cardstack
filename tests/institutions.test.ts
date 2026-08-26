@@ -2,7 +2,7 @@
 //
 // Maps a bank name from Plaid to a payment URL and, where one exists, an app
 // scheme. Plaid's institution names are not stable enough to match exactly, so
-// the lookup is fuzzy — and a wrong match sends someone to the wrong bank's
+// the lookup is fuzzy, and a wrong match sends someone to the wrong bank's
 // login page, which is why it's tested rather than trusted.
 //
 import { describe, expect, it } from 'vitest'

@@ -63,7 +63,7 @@ describe('sortCardsForDisplay', () => {
   })
 
   it('does not mutate the caller array', () => {
-    // Card colors are keyed off the original creation order — reordering it in
+    // Card colors are keyed off the original creation order, and reordering it in
     // place would make a card change color whenever its balance moved.
     const original = [card('Amex', 1240, 5000), card('Quicksilver', 3400, 8500)]
     const before = original.map((c) => c.name)

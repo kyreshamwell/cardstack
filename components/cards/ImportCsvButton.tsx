@@ -4,9 +4,9 @@
 // Imports a bank CSV for a card Plaid can't reach.
 //
 // The sign convention is asked, not guessed. Banks disagree about whether a
-// purchase is +50 or -50, and guessing wrong turns every purchase into a refund
-// — silently, with no error. The preview shows a real row from the file so the
-// choice can be checked against actual data before anything is written.
+// purchase is +50 or -50, and guessing wrong turns every purchase into a
+// refund, silently, with no error. The preview shows a real row from the file
+// so the choice can be checked against actual data before anything is written.
 
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
@@ -165,7 +165,7 @@ export function ImportCsvButton({ cards }: Props) {
               Export from your bank as CSV, then pick the file here.
             </p>
             {/* A rejected file leaves fileName unset, so this branch has to
-                show the error too — otherwise picking a bad CSV appears to do
+                show the error too. Otherwise picking a bad CSV appears to do
                 nothing at all. */}
             {error && <p className="mt-2 text-xs text-critical">{error}</p>}
           </div>

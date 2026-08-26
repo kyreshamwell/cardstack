@@ -1,12 +1,12 @@
 'use client'
 // components/landing/AuthPanel.tsx
 //
-// The sign-in / sign-up form. No card, no columns — just the form, centred,
+// The sign-in / sign-up form. No card, no columns: just the form, centred,
 // with whitespace as its container.
 //
-// It deliberately has no pitch column of its own. Two versions tried one — a
+// It deliberately has no pitch column of its own. Two versions tried one (a
 // static two-column layout, then a drawer that squeezed the landing page beside
-// it — and both were dropped: signing in is a destination, not something opened
+// it) and both were dropped: signing in is a destination, not something opened
 // next to the pitch, and a second pitch column just duplicated the real one.
 // This is the right-hand panel of the filmstrip in MarketingFrame.
 //
@@ -20,14 +20,14 @@
 // form. They're one interface in two states, and the control says so.
 //
 // Clerk's forms are themed in globals.css against its stable `cl-*` classes.
-// The `appearance` prop's `elements` map is NOT used — the root layout used to
-// set one globally and it silently won over anything passed here. `layout`
+// The `appearance` prop's `elements` map is NOT used. The root layout used to
+// set one globally, and it silently won over anything passed here. `layout`
 // options below still work; only `elements` was the problem.
 //
 // Note on surfaces: every control sits on `raised` over a `ground` page, never
-// the reverse. The two tokens don't hold a fixed relationship — `raised` is
+// the reverse. The two tokens don't hold a fixed relationship. `raised` is
 // DARKER than `ground` in the light theme (#fafafa on #ffffff) and LIGHTER in
-// the dark one (#0e0e0e on #000000) — so controls-on-ground read as raised in
+// the dark one (#0e0e0e on #000000), so controls-on-ground read as raised in
 // light and sunken in dark. This direction means "elevated" in both.
 
 import { SignIn, SignUp } from '@clerk/nextjs'
@@ -37,7 +37,7 @@ import { useEffect, useState } from 'react'
 
 const clerkLayout = {
   layout: {
-    // Providers above the email form — see the note at the top.
+    // Providers above the email form. See the note at the top.
     socialButtonsPlacement: 'top' as const,
     // Drops first/last name from sign-up. They're optional, Clerk never
     // requires them, and two half-width fields labelled "Optional" were the
@@ -73,7 +73,7 @@ export function AuthPanel({ active, mode }: { active: boolean; mode: 'sign-in' |
     <div className="grid h-full w-full place-items-center overflow-y-auto px-6 py-8">
       <div className="w-full max-w-sm">
 
-        {/* The switch itself stays instant — a pill sliding under the cursor
+        {/* The switch itself stays instant. A pill sliding under the cursor
             was the part that felt laboured. The transition lives in the form
             below, which is the thing that actually changed. */}
         <div className="flex rounded-xl bg-raised p-1">
@@ -117,7 +117,7 @@ export function AuthPanel({ active, mode }: { active: boolean; mode: 'sign-in' |
           </h1>
           <p className="mt-1.5 text-sm text-ink-2">
             {isSignIn
-              ? 'Pick whichever way you signed up — they all reach the same cards.'
+              ? 'Pick whichever way you signed up. They all reach the same cards.'
               : 'One account, and your cards follow it however you sign in.'}
           </p>
         </div>
@@ -125,21 +125,21 @@ export function AuthPanel({ active, mode }: { active: boolean; mode: 'sign-in' |
         {/*
           Reserves roughly the height of two provider buttons plus the email
           step, so nothing jumps as Clerk mounts. Deliberately short of the
-          tallest possible step — reserving for that left a slab of dead space
-          under the button.
+          tallest possible step, because reserving for that left a slab of dead
+          space under the button.
         */}
         <div className="mt-6 min-h-[190px]">
           {/*
             routing="virtual", not "path".
 
             Path routing makes Clerk assert it's mounted on a catch-all route
-            matching its own `path`, and this form is mounted the whole time —
+            matching its own `path`, and this form is mounted the whole time,
             including while the URL is `/`. That threw on every page load.
             Virtual routing is Clerk's mode for embedded forms: multi-step state
             lives in memory rather than the URL.
 
             The trade is that OAuth needs somewhere real to come back to, since
-            there's no Clerk-owned path to return into — hence /sso-callback.
+            there's no Clerk-owned path to return into, hence /sso-callback.
           */}
           {!everActive ? null : isSignIn ? (
             <SignIn
@@ -164,8 +164,7 @@ export function AuthPanel({ active, mode }: { active: boolean; mode: 'sign-in' |
           Not ready?{' '}
           <Link className="text-ink-2 underline underline-offset-2 hover:text-ink" href="/demo">
             Try the demo instead
-          </Link>{' '}
-          — no account needed.
+          </Link>. No account needed.
         </p>
       </div>
     </div>

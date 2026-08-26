@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This folder holds lightweight ADRs for meaningful technical choices made in this project. The goal is to be able to explain every decision in an interview — not just what we chose, but why, and what we traded away.
+This folder holds lightweight ADRs for meaningful technical choices made in this project. The goal is to be able to explain every decision in an interview: not just what we chose, but why, and what we traded away.
 
 ---
 

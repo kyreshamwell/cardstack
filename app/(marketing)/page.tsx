@@ -1,4 +1,4 @@
-// app/(marketing)/page.tsx — the pitch.
+// app/(marketing)/page.tsx: the pitch.
 //
 // Renders nothing: the hero is a panel of the filmstrip in this group's
 // layout, which is what lets it slide to the demo without unmounting. This

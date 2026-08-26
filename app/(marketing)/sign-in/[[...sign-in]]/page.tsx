@@ -8,10 +8,10 @@
 // Why (marketing)?
 //   So sign-in shares the filmstrip with the pitch and the demo, and arriving
 //   here slides rather than loads. The form itself is a panel in that group's
-//   layout — see MarketingFrame — which is why this file renders nothing.
+//   layout (see MarketingFrame), which is why this file renders nothing.
 
 export const metadata = {
-  title: 'Sign in — Cardstack',
+  title: 'Sign in to Cardstack',
 }
 
 export default function SignInPage() {

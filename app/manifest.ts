@@ -1,4 +1,4 @@
-// app/manifest.ts — the PWA manifest.
+// app/manifest.ts: the PWA manifest.
 //
 // Next.js serves this at /manifest.webmanifest from this file convention.
 //

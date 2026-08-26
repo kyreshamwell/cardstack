@@ -1,10 +1,10 @@
 // components/cards/PrivacyToggle.tsx
 //
-// Blurs every figure on screen in one tap — for screen-sharing, or a train.
+// Blurs every figure on screen in one tap, for screen-sharing or a train.
 //
 // Implemented as a single class on <html>: `.privacy-mode .sensitive-value`
 // gets a CSS blur. That makes it opt-in per element, which is cheap but rots
-// easily — a new component renders a figure, nobody adds the class, and the
+// easily: a new component renders a figure, nobody adds the class, and the
 // leak is invisible because everything looks right with privacy mode off.
 // `tests/components/privacy.test.tsx` sweeps for exactly that.
 

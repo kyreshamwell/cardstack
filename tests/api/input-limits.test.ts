@@ -8,7 +8,7 @@
 // Two habits are pinned down:
 //
 //   1. A request body is input, not a promise. Route handlers get a raw JSON
-//      body with no size limit and no schema — an array field decides how much
+//      body with no size limit and no schema. An array field decides how much
 //      of the database one POST writes unless the route says otherwise.
 //   2. Upstream error text stays server-side. Plaid's error_message names the
 //      institution and echoes request specifics; the browser gets a sentence it
@@ -39,7 +39,7 @@ vi.mock('@/lib/supabase', () => ({
   supabaseForUser: () => mocks.supabase!.client,
 }))
 
-// Real error helpers, faked network client — same split as the sync tests.
+// Real error helpers, faked network client: same split as the sync tests.
 vi.mock('@/lib/plaid', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/plaid')>()),
   plaidClient: {
@@ -63,7 +63,7 @@ const req = (body: unknown) =>
     body: JSON.stringify(body),
   })
 
-/** A body that is not JSON at all — what a truncated upload looks like. */
+/** A body that is not JSON at all, i.e. what a truncated upload looks like. */
 const brokenReq = () =>
   new Request('http://localhost/api', {
     method: 'POST',
@@ -84,7 +84,7 @@ beforeEach(() => {
 })
 
 // ── CSV import: how much one request may write ──────────────────────────────
-describe('POST /api/transactions/import — request size', () => {
+describe('POST /api/transactions/import: request size', () => {
   it('refuses a row count past the cap and writes nothing', async () => {
     const rows = Array.from({ length: 10_001 }, (_, i) => csvRow(i))
 
@@ -132,7 +132,7 @@ describe('POST /api/transactions/import — request size', () => {
   })
 
   it('rejects a cardId that is not a string', async () => {
-    // `.eq()` parameterizes, so this was never injection — but an object here
+    // `.eq()` parameterizes, so this was never injection, but an object here
     // matched nothing and still reported a successful import of zero rows.
     const res = await importCsv(req({ cardId: { $ne: null }, rows: [csvRow(1)] }))
 
@@ -142,7 +142,7 @@ describe('POST /api/transactions/import — request size', () => {
 })
 
 // ── exchange-token: the one route that used to throw ────────────────────────
-describe('POST /api/plaid/exchange-token — input validation', () => {
+describe('POST /api/plaid/exchange-token: input validation', () => {
   it('rejects a missing public_token without calling Plaid', async () => {
     const res = await exchangeToken(req({}))
 
@@ -159,7 +159,7 @@ describe('POST /api/plaid/exchange-token — input validation', () => {
   })
 
   it('answers a rejected token with an error instead of an unhandled throw', async () => {
-    // Link tokens expire after ~30 minutes, and onSuccess can fire twice — both
+    // Link tokens expire after ~30 minutes, and onSuccess can fire twice. Both
     // produce a token Plaid refuses. This used to reject unhandled.
     mocks.itemPublicTokenExchange.mockRejectedValue({
       response: { data: { error_code: 'INVALID_PUBLIC_TOKEN', error_message: 'already exchanged' } },
@@ -193,7 +193,7 @@ describe('POST /api/plaid/exchange-token — input validation', () => {
 })
 
 // ── create-link-token: upstream error text ──────────────────────────────────
-describe('POST /api/plaid/create-link-token — error handling', () => {
+describe('POST /api/plaid/create-link-token: error handling', () => {
   it('does not forward Plaid error text to the client', async () => {
     mocks.linkTokenCreate.mockRejectedValue({
       response: {

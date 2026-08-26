@@ -9,7 +9,7 @@
 /build
 
 # ── Environment files ────────────────────────────────────────────────────────────
-# Keep .env.example (safe to commit — no real secrets).
+# Keep .env.example (safe to commit, no real secrets).
 # Never commit .env.local or any variant with real keys.
 .env
 .env.local
@@ -23,7 +23,7 @@ next-env.d.ts
 
 # ── Personal notes ───────────────────────────────────────────────────────────────
 # Working lists and learning notes. Useful to keep locally, not useful to anyone
-# cloning the repo — the durable "how and why" lives in docs/ARCHITECTURE.md.
+# cloning the repo. The durable "how and why" lives in docs/ARCHITECTURE.md.
 /docs/private/
 
 # ── Misc ─────────────────────────────────────────────────────────────────────────

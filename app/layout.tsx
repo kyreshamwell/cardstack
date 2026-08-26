@@ -1,7 +1,7 @@
-// app/layout.tsx — the root layout.
+// app/layout.tsx: the root layout.
 //
 // In Next.js App Router, every page is nested inside layout files.
-// This is the outermost one — it wraps the entire app.
+// This is the outermost one, and it wraps the entire app.
 //
 // ClerkProvider must live here (not in individual layouts) so the auth
 // context is available everywhere, including the dashboard and API routes.
@@ -16,7 +16,7 @@ import './globals.css'
 const inter = Inter({ subsets: ['latin'] })
 
 export const viewport: Viewport = {
-  // Single tag — DarkModeToggle updates it via JS so it tracks the in-app
+  // Single tag. DarkModeToggle updates it via JS so it tracks the in-app
   // toggle rather than the OS preference (our dark mode is class-based)
   themeColor: '#ffffff',
   viewportFit: 'cover',
@@ -37,8 +37,8 @@ export const metadata: Metadata = {
 
 // No Clerk `appearance` prop here on purpose.
 //
-// This used to carry a slate palette — `card: 'shadow-lg border
-// border-slate-100'`, `colorBackground: '#ffffff'`, and friends — left over
+// This used to carry a slate palette (`card: 'shadow-lg border
+// border-slate-100'`, `colorBackground: '#ffffff'`, and friends) left over
 // from before the redesign. Two problems with it:
 //
 //   1. It rendered a bordered, shadowed card INSIDE the card AuthPanel draws,
@@ -57,7 +57,7 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider
-      // `localization`, not `appearance` — this is copy, not styling, so it
+      // `localization`, not `appearance`. This is copy, not styling, so it
       // doesn't reintroduce the global override problem described above.
       //
       // With a single provider Clerk labels the button "Continue with Google";
@@ -77,8 +77,8 @@ export default function RootLayout({
         <head>
           {/*
             Runs before first paint, deliberately blocking.
-            DarkModeToggle applies the theme in an effect, which is too late —
-            the browser has already painted a white page, so anyone on a dark
+            DarkModeToggle applies the theme in an effect, which is too late.
+            The browser has already painted a white page, so anyone on a dark
             device got a white flash on every single load. This reads the same
             two sources the toggle does (saved choice first, device preference
             otherwise) and stamps the class on <html> before anything renders.
@@ -91,7 +91,7 @@ export default function RootLayout({
             }}
           />
         </head>
-        {/* Tokens, not fixed colours — the old bg-white/text-slate-900 pair
+        {/* Tokens, not fixed colours. The old bg-white/text-slate-900 pair
             left a white page behind the app in dark mode. */}
         <body className={`${inter.className} bg-ground text-ink antialiased`}>
           {children}

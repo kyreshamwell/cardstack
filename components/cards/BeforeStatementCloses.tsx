@@ -8,7 +8,7 @@
 // the statement closes is what keeps the reported number low. Those are usually
 // three weeks apart.
 //
-// Cards already under target are omitted — this is a to-do list, not a report.
+// Cards already under target are omitted: this is a to-do list, not a report.
 
 import {
   formatCurrency,
@@ -100,7 +100,7 @@ export function BeforeStatementCloses({ cards, colorById }: Props) {
               {/*
                 `77% → 30%` rather than `Currently 77%`. The old line said where
                 the card is but never where the payment would land it, which is
-                the only thing that explains what the figure above is for — it
+                the only thing that explains what the figure above is for. It
                 is not the minimum, and it is not the statement balance.
               */}
               <p className="mt-0.5 text-[11px] text-ink-3">

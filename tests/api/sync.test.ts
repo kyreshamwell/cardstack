@@ -15,8 +15,8 @@ vi.mock('@clerk/nextjs/server', () => ({
 }))
 
 // Both clients resolve to the same recorder. The routes now split their work
-// between them — user data through supabaseForUser(), and connected_accounts
-// (which holds plaid_access_token) still through supabaseAdmin — but the
+// between them: user data through supabaseForUser(), and connected_accounts
+// (which holds plaid_access_token) still through supabaseAdmin. But the
 // assertions below care about the queries issued, not which client issued them.
 vi.mock('@/lib/supabase', () => ({
   get supabaseAdmin() {
@@ -76,7 +76,7 @@ beforeEach(() => {
 })
 
 // ── Tests ───────────────────────────────────────────────────────────────────
-describe('POST /api/plaid/sync — auth', () => {
+describe('POST /api/plaid/sync: auth', () => {
   it('rejects an unauthenticated request', async () => {
     mocks.userId = null
     setup()
@@ -98,7 +98,7 @@ describe('POST /api/plaid/sync — auth', () => {
   })
 })
 
-describe('POST /api/plaid/sync — tenant isolation', () => {
+describe('POST /api/plaid/sync: tenant isolation', () => {
   it('scopes every database call to the signed-in user', async () => {
     setup()
 
@@ -124,7 +124,7 @@ describe('POST /api/plaid/sync — tenant isolation', () => {
   })
 })
 
-describe('POST /api/plaid/sync — credit limits', () => {
+describe('POST /api/plaid/sync: credit limits', () => {
   it("writes Plaid's limit when the user has not set one", async () => {
     setup()
 
@@ -166,7 +166,7 @@ describe('POST /api/plaid/sync — credit limits', () => {
   })
 })
 
-describe('POST /api/plaid/sync — failure handling', () => {
+describe('POST /api/plaid/sync: failure handling', () => {
   it('reports a Plaid error code instead of throwing', async () => {
     setup()
     mocks.accountsBalanceGet.mockRejectedValue({
@@ -181,7 +181,7 @@ describe('POST /api/plaid/sync — failure handling', () => {
     expect(body.failures[0]).toMatchObject({
       institution: 'Chase',
       code: 'ITEM_LOGIN_REQUIRED',
-      // Retrying will never clear this one — it needs the user to re-auth.
+      // Retrying will never clear this one. It needs the user to re-auth.
       needsReauth: true,
     })
   })
@@ -199,8 +199,8 @@ describe('POST /api/plaid/sync — failure handling', () => {
 
   it('does not pass an internal error message off as a failure code', async () => {
     // `code` is rendered by the dashboard, so anything landing in it is shown
-    // to the user. A throw that isn't Plaid's — a failed write carrying a
-    // Postgres message, say — used to travel there verbatim.
+    // to the user. A throw that isn't Plaid's (a failed write carrying a
+    // Postgres message, say) used to travel there verbatim.
     setup()
     mocks.accountsBalanceGet.mockRejectedValue(
       new Error('duplicate key violates unique constraint "cards_plaid_account_id_key"')

@@ -4,7 +4,7 @@
 // Level Security meaningful in this codebase:
 //
 //   supabaseAdmin bypasses RLS entirely. It may only ever query
-//   connected_accounts — the table holding plaid_access_token, which the
+//   connected_accounts, the table holding plaid_access_token, which the
 //   user-level Postgres role must never be able to read.
 //
 // Everything else goes through supabaseForUser(), where the policies in
@@ -12,7 +12,7 @@
 //
 // Why a source sweep rather than a runtime test: the failure this catches is a
 // query written six months from now that reaches for the nearest client and
-// gets a superuser. Nothing at runtime would complain — it would work, and it
+// gets a superuser. Nothing at runtime would complain. It would work, and it
 // would return every user's rows. The only moment to catch it is in review, and
 // this test is that review.
 
@@ -58,7 +58,7 @@ function adminTables(source: string): string[] {
 describe('service-role client stays inside its blast radius', () => {
   it('finds the call sites it is meant to be checking', () => {
     // Guards against the sweep silently passing because the regex stopped
-    // matching — an empty sweep is a broken sweep, not a clean bill of health.
+    // matching. An empty sweep is a broken sweep, not a clean bill of health.
     const total = files
       .map((f) => adminTables(readFileSync(join(ROOT, f), 'utf8')).length)
       .reduce((a, b) => a + b, 0)

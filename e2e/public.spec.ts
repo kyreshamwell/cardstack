@@ -1,14 +1,14 @@
 // e2e/public.spec.ts
 //
 // The signed-out surface, exercised against a real browser and a real server.
-// These need no credentials, so they run anywhere — including CI — and they
+// These need no credentials, so they run anywhere (including CI) and they
 // cover what unit tests structurally cannot: that the app boots, that
 // middleware protects what it should, and that the pages render without
 // console errors.
 //
 // ── The one rule for writing tests in this file ───────────────────────────
 //
-// All three public panels — demo, landing, auth — are mounted at ALL times.
+// All three public panels (demo, landing, auth) are mounted at ALL times.
 // The route only decides which is on screen (see MarketingFrame). So a bare
 // `getByRole('heading', { level: 1 })` matches the landing hero AND the auth
 // panel's heading and fails on strict mode, and `[data-card-id]` finds the
@@ -76,7 +76,7 @@ test.describe('landing page', () => {
 test.describe('landing → demo', () => {
   // The whole point of the marketing page: the demo opens in place. If this
   // ever becomes a document navigation the effect is gone, and nothing about
-  // the rendered output would tell you — hence asserting on the mechanism.
+  // the rendered output would tell you, hence asserting on the mechanism.
   test('opens the demo without loading a new page', async ({ page }) => {
     await page.goto('/')
 
@@ -125,7 +125,7 @@ test.describe('landing → demo', () => {
 
 test.describe('demo', () => {
   // /demo renders the REAL dashboard components on fixture data with no
-  // credentials — so everything here is coverage of the actual app that would
+  // credentials, so everything here is coverage of the actual app that would
   // otherwise need a seeded account.
   test('is public and renders the real dashboard', async ({ page }) => {
     await page.goto('/demo')
@@ -140,7 +140,7 @@ test.describe('demo', () => {
 
   test('the utilization section is named for its outcome', async ({ page }) => {
     // Renamed from "Pay before close", which said when to act but never what
-    // for — the figure under it reads as a bill otherwise, sitting alongside a
+    // for. The figure under it reads as a bill otherwise, sitting alongside a
     // minimum payment and a statement balance for the same card.
     await page.goto('/demo')
     const panel = activePanel(page)
@@ -169,7 +169,7 @@ test.describe('demo', () => {
     expect(errors, `console errors:\n${errors.join('\n')}`).toEqual([])
   })
 
-  test('holds the fixed viewport on desktop — the page itself never scrolls', async ({
+  test('holds the fixed viewport on desktop: the page itself never scrolls', async ({
     page,
   }) => {
     await page.goto('/demo')
@@ -210,7 +210,7 @@ test.describe('demo', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
   })
 
-  test('"Pay this card" is inert — it must not link out to a bank', async ({ page }) => {
+  test('"Pay this card" is inert: it must not link out to a bank', async ({ page }) => {
     // The real button is an <a> to the bank's own site. Sending a sample
     // visitor to chase.com from a fake Chase card isn't ours to do, so the
     // demo renders a dead lookalike.
@@ -229,7 +229,7 @@ test.describe('demo', () => {
 
     // By the vendored LegendLabel's own class, not by text alone: on hover the
     // pie's CENTRE label also reads "Sapphire Preferred", it sits under the
-    // SVG, and Playwright picks it first — then waits for an element the chart
+    // SVG, and Playwright picks it first, then waits for an element the chart
     // is covering.
     const legendRow = panel
       .locator('span.text-legend-foreground')
@@ -262,7 +262,7 @@ test.describe('auth panel', () => {
 
     await expect(page).toHaveURL(/\/sign-up$/)
     await expect(panel.getByRole('heading', { name: /create your account/i })).toBeVisible()
-    // Still the same panel — this is a state change, not a navigation away.
+    // Still the same panel: this is a state change, not a navigation away.
     await expect(activePanel(page)).toHaveAttribute('data-panel', 'auth')
   })
 
@@ -320,7 +320,7 @@ test.describe('phone layout', () => {
     await expect(page.getByRole('tab', { name: 'Activity' })).toBeVisible()
     await expect(page.getByRole('tab', { name: 'Insights' })).toBeVisible()
 
-    // The balance sits outside the tabs — the one number worth seeing without
+    // The balance sits outside the tabs, the one number worth seeing without
     // having to choose to look for it.
     await expect(activePanel(page).getByText('Statement balance')).toBeVisible()
   })
@@ -341,7 +341,7 @@ test.describe('phone layout', () => {
 
   test('the document scrolls, and nothing scrolls inside it', async ({ page }) => {
     // Nested scrollers eat a swipe meant for the page, and iOS only collapses
-    // its address bar for document scroll — both were why this felt wrong.
+    // its address bar for document scroll. Both were why this felt wrong.
     await page.goto('/demo')
     await page.getByRole('tab', { name: 'Activity' }).click()
     await expect(activePanel(page).getByText('Recent activity')).toBeVisible()
@@ -379,7 +379,7 @@ test.describe('phone layout', () => {
   test('tapping a card in the chart brings you to the rows', async ({ page }) => {
     // The chart is in Insights and the rows are in Cards, so isolating a card
     // has to switch tabs or it appears to do nothing at all. The tap also has
-    // to work with no hover first — that used to be dead on touch entirely.
+    // to work with no hover first, which used to be dead on touch entirely.
     await page.goto('/demo')
     await page.getByRole('tab', { name: 'Insights' }).click()
 
@@ -417,7 +417,7 @@ test.describe('phone layout', () => {
 
   // The filmstrip used to be desktop-only. Below xl the inactive panels were
   // hidden and the track pinned to `transform: none`, so a phone got the panel
-  // swap with none of the motion — measured on this viewport as exactly two
+  // swap with none of the motion, measured on this viewport as exactly two
   // positions, the before and the after, with nothing in between.
   //
   // Both halves are asserted here, because either one alone is a bug: a slide
@@ -457,7 +457,7 @@ test.describe('phone layout', () => {
     })
     expect(travelled, 'the demo panel should travel, not teleport').toBeGreaterThan(3)
 
-    // Landed: one panel in flow, no transform, no pinned height — i.e. exactly
+    // Landed: one panel in flow, no transform, no pinned height, i.e. exactly
     // the resting layout the other tests in this block depend on.
     const rest = await page.evaluate(() => {
       const track = document.querySelector('.filmstrip-track') as HTMLElement
@@ -500,7 +500,7 @@ test.describe('route protection', () => {
   test('API routes reject unauthenticated calls', async ({ request }) => {
     const res = await request.post('/api/plaid/sync')
 
-    // 401 from the route, or a redirect from middleware — never 200.
+    // 401 from the route, or a redirect from middleware. Never 200.
     expect(res.status()).not.toBe(200)
   })
 
@@ -516,7 +516,7 @@ test.describe('route protection', () => {
 test.describe('theme', () => {
   test('respects a dark colour scheme', async ({ browser }) => {
     // The only test that opens a fresh browser context, so on a cold dev
-    // server it pays for the route's first compile itself — which overran the
+    // server it pays for the route's first compile itself, which overran the
     // default 30s timeout and made this the suite's one flaky test. Nothing
     // about the assertion is slow; the wait is the compiler.
     test.slow()

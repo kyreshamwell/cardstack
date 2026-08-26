@@ -2,7 +2,7 @@
 // components/cards/RemoveCardButton.tsx
 //
 // Shows a remove button that asks for confirmation before deleting.
-// Uses window.confirm for now — simple, no extra UI needed.
+// Uses window.confirm for now: simple, no extra UI needed.
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
@@ -25,7 +25,7 @@ export function RemoveCardButton({ cardId, cardName }: Props) {
     setRemoving(true)
 
     // Reset in `finally`: router.refresh() re-renders the list without
-    // unmounting, and React can reuse this instance for a different card — so a
+    // unmounting, and React can reuse this instance for a different card, so a
     // flag left set would show a spinning, disabled trash icon on a card that
     // was never being removed.
     try {

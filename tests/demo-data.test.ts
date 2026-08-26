@@ -1,6 +1,6 @@
 // tests/demo-data.test.ts
 //
-// The demo's fixtures are not decoration — /demo is the only surface that
+// The demo's fixtures are not decoration. /demo is the only surface that
 // renders the real dashboard without credentials, so it doubles as the widest
 // end-to-end coverage in the project. That only holds while the fixtures keep
 // exercising every branch the dashboard has.
@@ -23,7 +23,7 @@ import { payoffToTarget } from '@/lib/utils'
 /** A fixed instant, so nothing here depends on when the suite runs. */
 const NOW = new Date('2026-08-14T15:00:00').getTime()
 
-describe('buildDemoData — determinism', () => {
+describe('buildDemoData: determinism', () => {
   it('is a pure function of `now`', () => {
     // The whole point of threading a timestamp through from the server render.
     // If this ever stops holding, hydration mismatches come back.
@@ -55,7 +55,7 @@ describe('buildDemoData — determinism', () => {
   })
 })
 
-describe('buildDemoData — every branch of the dashboard stays exercised', () => {
+describe('buildDemoData: every branch of the dashboard stays exercised', () => {
   const data = buildDemoData(NOW)
 
   it('has a card over the utilization target, so that section has something to say', () => {
@@ -111,7 +111,7 @@ describe('buildDemoData — every branch of the dashboard stays exercised', () =
   })
 })
 
-describe('buildDemoData — internal consistency', () => {
+describe('buildDemoData: internal consistency', () => {
   const data = buildDemoData(NOW)
 
   it('gives every card a colour and a name', () => {

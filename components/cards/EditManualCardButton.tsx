@@ -54,10 +54,10 @@ export function EditManualCardButton({
     setError('')
 
     // The reset lives in `finally` on purpose. router.refresh() re-fetches the
-    // server data but does NOT unmount this component, so React keeps its state
-    // — clearing `saving` only on the error path left it stuck at true after a
-    // successful save, and the next time the dialog opened the button read
-    // "Saving…" and was disabled forever.
+    // server data but does NOT unmount this component, so React keeps its
+    // state. Clearing `saving` only on the error path left it stuck at true
+    // after a successful save, and the next time the dialog opened the button
+    // read "Saving…" and was disabled forever.
     try {
       const res = await fetch('/api/cards/update-manual', {
         method: 'PATCH',
@@ -82,7 +82,7 @@ export function EditManualCardButton({
       }
     } catch {
       // fetch only rejects on a network-level failure, which the old code left
-      // unhandled — same stuck button, no message.
+      // unhandled: same stuck button, no message.
       setError('Could not reach the server. Check your connection and try again.')
     } finally {
       setSaving(false)

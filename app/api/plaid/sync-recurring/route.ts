@@ -4,7 +4,7 @@
 //
 // Plaid derives these from transaction history, so this needs the Transactions
 // product and enough history to spot a pattern. A brand-new connection will
-// return few or no streams until Plaid has seen a couple of cycles — streams
+// return few or no streams until Plaid has seen a couple of cycles. Streams
 // with status EARLY_DETECTION are Plaid's low-confidence guesses.
 //
 // We only keep OUTFLOW streams: money leaving the card (subscriptions and other
@@ -46,7 +46,7 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
       if (c.plaid_account_id) cardByAccount.set(c.plaid_account_id, c.id)
     }
 
-    // No tracked cards on this connection — nothing to attribute streams to.
+    // No tracked cards on this connection, so nothing to attribute streams to.
     if (cardByAccount.size === 0) {
       return { ok: true, institution, found: 0 }
     }

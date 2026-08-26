@@ -1,5 +1,5 @@
 'use client'
-// app/sso-callback/page.tsx — where Google and Apple send the browser back to.
+// app/sso-callback/page.tsx: where Google and Apple send the browser back to.
 //
 // OAuth is the one flow that leaves the site entirely: the browser goes to
 // Google, the user approves, and Google redirects back here with a code in the
@@ -8,7 +8,7 @@
 //
 // This route exists because the auth panel runs `routing="virtual"`. Virtual
 // routing keeps Clerk's multi-step state in memory rather than in the URL,
-// which is what lets the form live permanently in the marketing layout — but
+// which is what lets the form live permanently in the marketing layout, but
 // it means Clerk has no path of its own to return into. So the return address
 // has to be a real page, and this is it.
 //
@@ -31,7 +31,7 @@ export default function SSOCallback() {
 
       {/*
         Renders nothing. It reads the OAuth response out of the URL, finishes
-        the sign-in, and navigates on — the spinner above is the entire visible
+        the sign-in, and navigates on. The spinner above is the entire visible
         state of this page.
       */}
       <AuthenticateWithRedirectCallback

@@ -2,7 +2,7 @@
 //
 // Privacy mode is nothing but a CSS rule: `.privacy-mode .sensitive-value`
 // gets `filter: blur(8px)`. That makes it opt-in per element, which makes it
-// exactly the kind of feature that rots — a new component renders a figure,
+// exactly the kind of feature that rots: a new component renders a figure,
 // nobody adds the class, and the leak is invisible because everything still
 // looks correct with privacy mode OFF.
 //
@@ -42,7 +42,7 @@ const FIGURE = /\$\s?[\d,]+(\.\d+)?|\b\d+(\.\d+)?%/
  *
  * Walks text nodes rather than elements because the class is usually on an
  * ancestor (`<p class="sensitive-value">{formatCurrency(x)}</p>`), and because
- * a figure is sometimes split across siblings — checking `closest()` from the
+ * a figure is sometimes split across siblings, checking `closest()` from the
  * text node's parent handles both without caring about the markup shape.
  */
 function unblurredFigures(root: HTMLElement): string[] {
@@ -59,7 +59,7 @@ function unblurredFigures(root: HTMLElement): string[] {
   return leaks
 }
 
-/** Sanity check on the sweep itself — see the self-test at the bottom. */
+/** Sanity check on the sweep itself. See the self-test at the bottom. */
 function sensitiveCount(root: HTMLElement): number {
   return root.querySelectorAll('.sensitive-value').length
 }
@@ -192,16 +192,16 @@ const CASES: Array<[string, () => React.ReactElement]> = [
   ],
 ]
 
-describe('privacy mode — every rendered figure opts in', () => {
+describe('privacy mode: every rendered figure opts in', () => {
   it.each(CASES)('%s', (_name, renderCase) => {
     const { container } = render(renderCase())
     expect(unblurredFigures(container)).toEqual([])
   })
 })
 
-describe('privacy mode — figures behind an interaction', () => {
-  // Most of a card's numbers — current balance, available, limit, minimum
-  // payment — only exist once the row is expanded, so the collapsed render in
+describe('privacy mode: figures behind an interaction', () => {
+  // Most of a card's numbers (current balance, available, limit, minimum
+  // payment) only exist once the row is expanded, so the collapsed render in
   // the sweep above barely touches them.
   it('blurs everything in an expanded CardTile', async () => {
     const user = userEvent.setup()
@@ -214,7 +214,7 @@ describe('privacy mode — figures behind an interaction', () => {
   })
 
   // ManualLimitInput replaces the limit row, so it has its own blur to get
-  // right — and it starts in edit mode when there's no limit yet.
+  // right, and it starts in edit mode when there's no limit yet.
   it('blurs the limit ManualLimitInput renders in place of the plain row', () => {
     const { container } = render(
       <CardTile
@@ -228,7 +228,7 @@ describe('privacy mode — figures behind an interaction', () => {
   })
 })
 
-describe('privacy mode — the CSV import preview', () => {
+describe('privacy mode: the CSV import preview', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     globalThis.fetch = vi.fn().mockResolvedValue({
@@ -238,7 +238,7 @@ describe('privacy mode — the CSV import preview', () => {
   })
 
   // Not part of the sweep above because the amount only appears after a file
-  // is chosen — but it's a real leak surface: the preview shows a genuine
+  // is chosen, but it's a real leak surface: the preview shows a genuine
   // transaction amount from the user's statement.
   it('blurs the amount in the first-row preview', async () => {
     const user = userEvent.setup()
@@ -265,7 +265,7 @@ describe('privacy mode — the CSV import preview', () => {
 
 describe('the sweep itself', () => {
   // The sweep can only fail if it actually sees the figures. A component whose
-  // numbers live somewhere a TreeWalker can't reach — shadow DOM, canvas —
+  // numbers live somewhere a TreeWalker can't reach (shadow DOM, canvas)
   // would pass vacuously and prove nothing, so pin that it finds real text.
   it('finds figures that are missing the class', () => {
     const { container } = render(
@@ -282,7 +282,7 @@ describe('the sweep itself', () => {
   // The pie is the one that matters here: it's a vendored chart, and its center
   // value goes through NumberFlow, a custom element. If NumberFlow put its
   // digits in shadow DOM the walker would never see them and the BalancePie
-  // case above would pass no matter what. This asserts reachability only — it
+  // case above would pass no matter what. This asserts reachability only, and it
   // must keep passing with or without the sensitive-value fix.
   it('sees the pie center total and legend amounts as plain text', () => {
     const { container } = render(<BalancePie slices={SLICES} />)

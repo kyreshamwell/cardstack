@@ -1,4 +1,4 @@
-// tests/setup-dom.ts — runs before every jsdom test file.
+// tests/setup-dom.ts: runs before every jsdom test file.
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'

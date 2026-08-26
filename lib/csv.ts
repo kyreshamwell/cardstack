@@ -1,4 +1,4 @@
-// lib/csv.ts — parsing helpers for bank CSV exports.
+// lib/csv.ts: parsing helpers for bank CSV exports.
 //
 // Bank CSVs are not consistent with each other. Descriptions contain commas and
 // are quoted; amounts show up as "$1,234.56", "-50.00", or "(50.00)" for a
@@ -8,7 +8,7 @@
 /**
  * Parses CSV text into rows of fields, honoring quoted fields and escaped
  * quotes (`""`). A plain split on commas breaks on any description containing
- * one — which is most of them.
+ * one, which is most of them.
  */
 export function parseCsv(text: string): string[][] {
   const rows: string[][] = []
@@ -69,7 +69,7 @@ export function parseCsv(text: string): string[][] {
     rows.push(row)
   }
 
-  // Drop fully blank lines — trailing newlines are near-universal in exports.
+  // Drop fully blank lines. Trailing newlines are near-universal in exports.
   return rows.filter((r) => r.some((c) => c.trim() !== ''))
 }
 
@@ -105,7 +105,7 @@ export function parseAmount(raw: string): number | null {
 
   // Require a bare number by this point. Number() alone is too permissive:
   // it accepts a second sign, so "--5" parsed as -5 and then got negated back
-  // to a positive 5 — malformed input silently importing as a real charge.
+  // to a positive 5, so malformed input silently imported as a real charge.
   if (!/^\d*\.?\d+$/.test(s)) return null
 
   const n = Number(s)
@@ -118,7 +118,7 @@ export function parseAmount(raw: string): number | null {
  * Normalizes a date to YYYY-MM-DD, or null if unreadable.
  *
  * Ambiguous slash dates are read as US month-first, which is what US bank
- * exports use — the only kind this app connects to.
+ * exports use, and the only kind this app connects to.
  */
 export function parseDate(raw: string): string | null {
   const s = raw.trim()

@@ -19,7 +19,7 @@ export function MarkViewed() {
     sent.current = true
 
     fetch('/api/viewed', { method: 'POST' }).catch(() => {
-      // Non-critical — a missed ping just means the marker persists one more visit.
+      // Non-critical: a missed ping just means the marker persists one more visit.
     })
   }, [])
 

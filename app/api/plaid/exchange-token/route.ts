@@ -9,7 +9,7 @@
 //
 // Why can't the browser do this directly?
 //   The access_token must NEVER touch the client. This route is the only place
-//   it exists — Supabase stores it, and it only ever gets read server-side.
+//   it exists: Supabase stores it, and it only ever gets read server-side.
 //
 // That is also why this route uses two Supabase clients: the connected_accounts
 // insert below carries the access_token and stays on supabaseAdmin, while the
@@ -43,13 +43,14 @@ export async function POST(request: Request) {
   // ── Steps 1 & 2: Exchange the token, then identify the institution ──────────
   //
   // Wrapped together because they're the calls that run BEFORE anything is
-  // persisted, so a throw here leaves no partial state — there is nothing to
+  // persisted, so a throw here leaves no partial state. There is nothing to
   // roll back, and the user can simply reconnect.
   //
-  // Left unguarded, a public_token that Plaid rejects (expired — they last ~30
-  // minutes — or already exchanged, which happens when Link's onSuccess fires
-  // twice) threw an unhandled rejection. The user saw a bare 500 from a flow
-  // that had otherwise worked, with the actual reason only in the server log.
+  // Left unguarded, a public_token that Plaid rejects threw an unhandled
+  // rejection. It is rejected when it has expired, since these last about 30
+  // minutes, or when it has already been exchanged, which happens when Link's
+  // onSuccess fires twice. The user saw a bare 500 from a flow that had
+  // otherwise worked, with the actual reason only in the server log.
   let access_token: string
   let item_id: string
   let institutionId = ''
@@ -120,7 +121,7 @@ export async function POST(request: Request) {
 
   // In production/development, filter to credit cards only.
   // In sandbox, Plaid test institutions only return depository accounts so we
-  // skip the filter — otherwise nothing ever saves during local development.
+  // skip the filter, since otherwise nothing ever saves during development.
   const isSandbox = process.env.PLAID_ENV === 'sandbox'
   const creditCards = isSandbox
     ? accounts
@@ -171,7 +172,7 @@ export async function POST(request: Request) {
         .eq('user_id', userId)
     }
   } catch {
-    // Institution doesn't support Liabilities — due dates will just be null
+    // Institution doesn't support Liabilities, so due dates will just be null
     console.log('Liabilities not available for this institution')
   }
 

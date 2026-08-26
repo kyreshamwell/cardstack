@@ -14,8 +14,8 @@ export default defineConfig({
   //
   // The bottleneck is the Next DEV server, not the machine: it compiles routes
   // on demand, and five workers navigating at once made it drop connections
-  // (`ECONNRESET`, then `net::ERR_ABORTED` on goto) — tests that passed alone
-  // and failed in the pack. Two workers is both stable across repeated runs
+  // (`ECONNRESET`, then `net::ERR_ABORTED` on goto). Tests that passed alone
+  // failed in the pack. Two workers is both stable across repeated runs
   // and FASTER end to end (~20s vs ~52s), because the server isn't thrashing.
   workers: 2,
   forbidOnly: !!process.env.CI,
@@ -23,7 +23,7 @@ export default defineConfig({
 
   // 10s rather than the 5s default. Against a dev server that compiles routes
   // on demand, a first navigation to a cold route can take several seconds
-  // before anything renders — that jitter is the environment, not the app, and
+  // before anything renders. That jitter is the environment, not the app, and
   // 5s put assertions right on the edge of it.
   expect: { timeout: 10_000 },
 

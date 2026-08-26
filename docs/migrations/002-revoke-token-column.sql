@@ -5,7 +5,7 @@
 --
 -- `plaid_access_token` was readable from the browser by any signed-in user.
 --
--- Not through a bug in the app — through the SELECT policy in schema.sql:
+-- Not through a bug in the app, but through the SELECT policy in schema.sql:
 --
 --   create policy "Users see their own connected accounts"
 --     on connected_accounts for select
@@ -30,7 +30,7 @@
 -- same JWT, same `auth.jwt() ->> 'sub'`.
 --
 -- The second half does not follow. supabaseAdmin does not authenticate as
--- `authenticated` — it authenticates as `service_role`, a different Postgres
+-- `authenticated`. It authenticates as `service_role`, a different Postgres
 -- role. Column privileges are granted per role, so they draw exactly the line
 -- policies cannot:
 --
@@ -59,15 +59,19 @@
 -- ── What the user-level client actually needs ──────────────────────────────
 --
 -- Only two queries in the app read this table as the user (everything else is
--- supabaseAdmin, enforced by tests/rls-boundary.test.ts), and between them they
--- need exactly the four columns granted below:
+-- supabaseAdmin, enforced by tests/rls-boundary.test.ts). Between them they name
+-- four columns, and filter on a fifth:
 --
 --   dashboard/page.tsx  .select('id, institution_name, transactions_enabled')
+--                       .eq('user_id', userId)          ← the fifth column
 --   dashboard/page.tsx  .select('*, connected_accounts(institution_name, institution_id)')
 --
--- `user_id` is granted too. The RLS policy reads it, and while policy
--- expressions are evaluated by the system rather than under the caller's column
--- privileges, granting it costs nothing — it holds the caller's own Clerk ID,
+-- `user_id` is granted too, and it is REQUIRED rather than a freebie: the first
+-- query filters with `.eq('user_id', userId)`, and a column read in a WHERE
+-- clause needs SELECT privilege just as much as one in the select list. Drop it
+-- and the dashboard starts failing on a query that never names it in output.
+--
+-- Exposing it costs nothing on top of that: it holds the caller's own Clerk ID,
 -- which the browser already knows.
 --
 -- Deliberately NOT granted: plaid_access_token, plaid_item_id,
@@ -104,7 +108,7 @@ where table_name = 'connected_accounts'
   and privilege_type = 'SELECT'
 order by grantee, column_name;
 
--- Confirm the table-level grant is really gone — this should return NO rows for
+-- Confirm the table-level grant is really gone. This should return NO rows for
 -- authenticated or anon. If it still lists them, step 1 did not take and the
 -- column grants above are being bypassed.
 select grantee, privilege_type

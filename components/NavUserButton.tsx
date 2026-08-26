@@ -3,8 +3,8 @@
 // The account pill in the signed-in nav.
 //
 // Clerk's <UserButton /> brings its own trigger, which doesn't match anything
-// else here. Rather than fight its internals, this draws the pill we want —
-// initials, first name, chevron — and lays Clerk's real button over it,
+// else here. Rather than fight its internals, this draws the pill we want
+// (initials, first name, chevron) and lays Clerk's real button over it,
 // invisible and filling the whole pill, so Clerk still owns the click and the
 // popover. The visible parts are `pointer-events-none` so they never intercept.
 
@@ -28,7 +28,7 @@ export function NavUserButton() {
         <span className="text-xs font-semibold text-white">{initials}</span>
       </div>
 
-      {/* First name — hidden on small screens */}
+      {/* First name, hidden on small screens */}
       <span className="hidden sm:inline text-sm font-medium text-ink pointer-events-none">
         {firstName}
       </span>
@@ -44,7 +44,7 @@ export function NavUserButton() {
         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
       </svg>
 
-      {/* Invisible Clerk UserButton covering the full pill — handles clicks + popover */}
+      {/* Invisible Clerk UserButton covering the full pill. Handles clicks + popover */}
       <div className="absolute inset-0 overflow-hidden rounded-full">
         <UserButton afterSignOutUrl="/" />
       </div>

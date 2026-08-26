@@ -5,7 +5,7 @@
 // doesn't sit showing hours-old balances until you remember to hit Refresh.
 //
 // Why a threshold instead of syncing every visit:
-//   /accounts/balance/get pulls live from the bank on every call — that's the
+//   /accounts/balance/get pulls live from the bank on every call, which is the
 //   whole reason balances are accurate now. It's also slow and rate-limited per
 //   Item, so firing it on every render (including every router.refresh()) would
 //   hammer the institution and eventually get throttled. Thirty minutes keeps
@@ -51,7 +51,7 @@ export function AutoRefresh({ lastSyncedAt }: Props) {
         await fetch('/api/plaid/sync-recurring', { method: 'POST' })
         router.refresh()
       } catch {
-        // A failed background sync is not worth interrupting anyone over — the
+        // A failed background sync is not worth interrupting anyone over. The
         // Refresh button surfaces real errors when pressed deliberately.
       }
     })()

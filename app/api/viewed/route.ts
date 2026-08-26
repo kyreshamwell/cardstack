@@ -11,7 +11,7 @@
 //
 // This is the pilot for moving every route from `supabaseAdmin` (which bypasses
 // Row Level Security) to `supabaseForUser()` (which enforces it). It was chosen
-// because it's the smallest read/write pair in the app — if the Clerk↔Supabase
+// because it's the smallest read/write pair in the app. If the Clerk↔Supabase
 // integration is misconfigured, it fails here rather than somewhere expensive.
 //
 // The `.eq('user_id', …)` filters below are now BELT AND BRACES, not the

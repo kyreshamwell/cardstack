@@ -5,7 +5,7 @@
 --
 -- schema.sql enables row level security on five tables and gives each one a
 -- SELECT policy. That was enough while every route used the service role key,
--- because Postgres exempts service_role from RLS entirely — the policies were
+-- because Postgres exempts service_role from RLS entirely, so the policies were
 -- documentation, not enforcement.
 --
 -- Moving routes onto supabaseForUser() makes the policies real, and reveals
@@ -22,11 +22,11 @@
 -- exactly what every table's user_id column already holds.
 --
 -- USING vs WITH CHECK is the part worth understanding:
---   USING      — which existing rows this operation may TOUCH (select/update/delete)
---   WITH CHECK — what a row is allowed to LOOK LIKE after it's written (insert/update)
+--   USING:      which existing rows this operation may TOUCH (select/update/delete)
+--   WITH CHECK: what a row is allowed to LOOK LIKE after it's written (insert/update)
 --
 -- UPDATE needs both. Without WITH CHECK you could take one of your own rows and
--- reassign its user_id to someone else's — passing USING on the way in and
+-- reassign its user_id to someone else's, passing USING on the way in and
 -- writing a row you no longer own on the way out.
 
 -- ─── cards ─────────────────────────────────────────────────────────────────
@@ -103,17 +103,17 @@ create policy "Users update their own state"
 --
 -- supabaseForUser() authenticates as the `authenticated` role. So does a
 -- Supabase client running in a browser with a Clerk token. Postgres cannot
--- tell those two apart — they are the same role — so any policy permissive
+-- tell those two apart, because they are the same role, so any policy permissive
 -- enough for the server route is equally permissive for the browser.
 --
 -- There is no POLICY that separates them. So the separation stays at the key
 -- level: only code holding the service-role key touches this table.
 --
--- The existing SELECT policy is left in place — it's what lets the dashboard's
+-- The existing SELECT policy is left in place. It's what lets the dashboard's
 -- `cards → connected_accounts(institution_name, …)` join resolve for the user
 -- client, and that join never selects the token column.
 --
--- ⚠ CORRECTED BY 002-revoke-token-column.sql — read this part with care.
+-- ⚠ CORRECTED BY 002-revoke-token-column.sql. Read this part with care.
 --
 -- This file originally continued: "...and column-level REVOKE that hides the
 -- token from the browser would also hide it from the server route that
@@ -123,7 +123,7 @@ create policy "Users update their own state"
 -- supabaseAdmin authenticates as `service_role`, NOT `authenticated`. Column
 -- privileges are per-role, so they draw precisely the line policies cannot: the
 -- browser and supabaseForUser() lose the column, supabaseAdmin keeps it. (The
--- spelling matters — a bare column REVOKE is silently a no-op against Supabase's
+-- spelling matters: a bare column REVOKE is silently a no-op against Supabase's
 -- default table-level grant. 002 explains why it is revoke-then-grant-back.)
 --
 -- The lesson generalizes past this table: "the app never selects that column"

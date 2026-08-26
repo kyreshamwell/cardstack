@@ -1,6 +1,6 @@
 // components/cards/RecurringCharges.tsx
 //
-// Server component — renders the recurring streams Plaid detected.
+// Server component. Renders the recurring streams Plaid detected.
 //
 // The headline is the normalized monthly total, since that's the number that
 // answers "what am I paying every month without thinking about it." Individual
@@ -40,7 +40,7 @@ export function RecurringCharges({ charges, cardNameById, colorById }: Props) {
     )
   }
 
-  // Biggest first — the ones worth cancelling are at the top.
+  // Biggest first, so the ones worth cancelling are at the top.
   const sorted = [...charges].sort(
     (a, b) =>
       monthlyEquivalent(b.average_amount ?? 0, b.frequency) -
@@ -73,7 +73,7 @@ export function RecurringCharges({ charges, cardNameById, colorById }: Props) {
                   {c.merchant_name ?? c.description}
                   {c.status === 'EARLY_DETECTION' && (
                     <span
-                      title="Plaid has only seen this a couple of times — it may not actually be recurring."
+                      title="Plaid has only seen this a couple of times, so it may not actually be recurring."
                       className="ml-2 rounded border border-line px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ink-3 align-middle"
                     >
                       Unconfirmed

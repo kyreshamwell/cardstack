@@ -1,4 +1,4 @@
-// lib/utils.ts — shared utility functions.
+// lib/utils.ts: shared utility functions.
 //
 // These are pure functions: no side effects, no imports, easy to unit test.
 // Financial display logic lives here so it's consistent across every component.
@@ -6,7 +6,7 @@
 /**
  * Formats a number as a USD currency string.
  *
- * Uses the browser's built-in Intl.NumberFormat rather than a library —
+ * Uses the browser's built-in Intl.NumberFormat rather than a library, since
  * it handles locale, grouping separators, and decimal places correctly.
  *
  * @example
@@ -60,7 +60,7 @@ export function getDueDateStatus(dueDate: Date): DueDateStatus {
 /**
  * Formats a past timestamp as a short relative string.
  *
- * Used for the "Updated 2 min ago" line beside the refresh control — without
+ * Used for the "Updated 2 min ago" line beside the refresh control. Without
  * it there's no signal that data is fresh, which reads as data being wrong.
  *
  * @example
@@ -134,8 +134,8 @@ export function daysUntil(date: Date): number {
  * Normalizes a recurring charge to what it costs per month.
  *
  * Plaid reports each stream at its own cadence, so a $9.99 weekly charge and a
- * $9.99 annual one look identical until you convert them. Comparing subscriptions
- * — and totalling them — only makes sense on a common footing.
+ * $9.99 annual one look identical until you convert them. Comparing
+ * subscriptions, and totalling them, only makes sense on a common footing.
  *
  * UNKNOWN frequency is treated as monthly: it's the most common cadence, and
  * under-counting a real charge is worse than the alternative.

@@ -1,6 +1,6 @@
 # Architecture
 
-How Cardstack is put together, and **why** — including the approaches that were
+How Cardstack is put together, and **why**, including the approaches that were
 tried and abandoned, so they don't get proposed again.
 
 If you're changing the public pages, the dashboard layout, or auth, read the
@@ -35,7 +35,7 @@ does **no data fetching**.
 - `components/demo/DemoDashboard.tsx` passes fixtures in.
 
 This is the single most important structural decision in the project. The demo
-used to be a separate lookalike component, and it drifted badly — it sat on the
+used to be a separate lookalike component, and it drifted badly. It sat on the
 old slate palette for months after the redesign and showed a layout the app no
 longer had. A demo assembled from the real components can only be wrong if the
 app is wrong too.
@@ -44,8 +44,8 @@ It also buys the widest test coverage available: `/demo` renders the real
 dashboard **with no credentials**, so Playwright can assert against it without a
 seeded account.
 
-**The seams are `ReactNode` props.** Anything needing a network — the toolbar,
-per-card actions, the limit editor — is injected rather than imported, because
+**The seams are `ReactNode` props.** Anything needing a network (the toolbar,
+per-card actions, the limit editor) is injected rather than imported, because
 those are exactly the things the demo has to replace. In the demo they're
 replaced by `GatedButton`, which raises one shared "needs a real account"
 prompt.
@@ -67,7 +67,7 @@ horizontal strip, in the `(marketing)` layout:
 ```
 
 Navigating translates the strip by exactly one viewport with a spring. The
-`AppShell` around it — nav, brand, frame — never unmounts, so nothing reloads.
+`AppShell` around it (nav, brand, frame) never unmounts, so nothing reloads.
 
 **All three panels stay mounted at all times.** That's load-bearing, and it's
 the thing most likely to trip you up: `getByRole('heading')` matches more than
@@ -79,21 +79,21 @@ the `data-panel` / `data-active` attributes to tell which is on screen.
 Recorded because each looked correct until it wasn't:
 
 1. **Local state + `history.pushState`.** The App Router remounts the route tree
-   when the URL is pushed underneath it, so the view reset every time — address
+   when the URL is pushed underneath it, so the view reset every time: address
    bar on `/demo`, hero still on screen.
 2. **`AnimatePresence mode="wait"` cross-fade.** Correct, but reads as lag:
    0.28s out, a dead beat, 0.28s in, with nothing moving for most of it.
 3. **`AnimatePresence mode="sync"` slide.** In a Next *layout* the exiting child
-   can't keep the old page's `children` — that prop has already been replaced —
-   so the panel sliding out re-rendered as the incoming one and two dashboards
-   crossed the screen. The usual fix freezes an internal Next router context:
-   a lot of fragility for one transition.
+   can't keep the old page's `children`, because that prop has already been
+   replaced, so the panel sliding out re-rendered as the incoming one and two
+   dashboards crossed the screen. The usual fix freezes an internal Next router
+   context: a lot of fragility for one transition.
 4. **A drawer** that squeezed the landing page to 46% while auth opened beside
    it. It worked, but signing in reads as a destination rather than something
    opened next to the pitch.
 
 Mounting all three removes the entire class of problem: no enter, no exit, no
-unmount to coordinate — just one transform. It also means the demo is built and
+unmount to coordinate, just one transform. It also means the demo is built and
 painted before it's ever asked for, so the slide has nothing to compile
 mid-flight.
 
@@ -108,7 +108,7 @@ Clerk, with Google and Apple enabled as social connections.
 
 **`routing="virtual"`, not `"path"`.** Path routing makes Clerk assert it's
 mounted on a catch-all route matching its own `path`, and this form is mounted
-the whole time — including while the URL is `/`. That threw on every page load.
+the whole time, including while the URL is `/`. That threw on every page load.
 Virtual routing is Clerk's mode for embedded forms: multi-step state lives in
 memory rather than in the URL.
 
@@ -124,7 +124,7 @@ follows dark mode, which `appearance.variables` (fixed hex values) cannot.
 
 Clerk quirks handled there, each of which cost time to find:
 
-- Two localization keys for provider labels — `socialButtonsBlockButton` **and**
+- Two localization keys for provider labels: `socialButtonsBlockButton` **and**
   `socialButtonsBlockButtonManyInView`. Only the first has the "Continue with…"
   phrasing by default, so enabling a second provider collapses both to bare
   names.
@@ -135,10 +135,10 @@ Clerk quirks handled there, each of which cost time to find:
 - The placeholder colour is hardcoded and ignores the theme.
 - `.cl-cardBox` sets `overflow: hidden`, which clips the "Last used" badge.
 - Provider marks are `<img>` from Clerk's CDN, so they can't inherit
-  `currentColor` — Apple's black glyph is invisible on a dark button and is
+  `currentColor`. Apple's black glyph is invisible on a dark button and is
   inverted in dark mode only.
 
-**Identity model.** Every table keys off `user_id text` — the Clerk user ID.
+**Identity model.** Every table keys off `user_id text`, the Clerk user ID.
 Data belongs to a user ID, not to an email and not to a login method. Google,
 Apple and password are three doors into the same user record, joined by Clerk's
 verified-email linking. The known failure: Apple's *Hide My Email* supplies a
@@ -163,13 +163,13 @@ the tabs, and the **document** scrolling rather than any inner box.
 
 - **Nested scrollers eat touch gestures.** `.scroll-y` sets
   `overscroll-behavior: contain`, which makes it worse. `.flow-scroll`
-  neutralises them inside the phone layout — including their `-mx-1 px-1`, which
+  neutralises them inside the phone layout, including their `-mx-1 px-1`, which
   exists so a scrollbar can hang outside the content and otherwise pushes every
   row 4px past the panel edge.
 - **iOS only collapses its address bar for *document* scroll.** A full-height
   inner scroller looks identical and still feels wrong.
 - **`overflow-clip` makes an element a scroll container**, and a flex item that
-  is a scroll container has `min-height: auto` resolve to 0 — so it clips tall
+  is a scroll container has `min-height: auto` resolve to 0, so it clips tall
   content instead of growing, and the page silently stops scrolling. Clip
   horizontally only.
 - **Percentage heights need a definite parent.** Once the shell is `min-h-dvh`
@@ -177,17 +177,17 @@ the tabs, and the **document** scrolling rather than any inner box.
   nothing. Use a flex chain (`main` → container → track → panel) instead. This
   one caused three separate visual bugs before it was understood.
 - **A percentage `max-height` can't cap an auto-height sibling**, so off-screen
-  panels are `hidden` below `xl` rather than height-capped — otherwise the
+  panels are `hidden` below `xl` rather than height-capped. Otherwise the
   off-screen dashboard gives the landing page a screenful of empty scroll.
 - **Below `xl` the filmstrip only exists while it is moving.** At rest one panel
-  is in flow, and translating -100% per index would push that one off screen —
+  is in flow, and translating -100% per index would push that one off screen,
   so `.filmstrip-track:not([data-sliding='true'])` gets
   `transform: none !important` under a media query. For the length of a move,
   `MarketingFrame` sets `data-sliding`, puts every panel back in flow and pins
   the track to one viewport, which is the same arrangement desktop has
   permanently; on arrival it tears that down and the phone returns to one panel
   and ordinary document scrolling. Rest state stays pinned in CSS rather than in
-  JS deliberately — it is what the server renders and what survives to first
+  JS deliberately. It is what the server renders and what survives to first
   paint, so no panel can flash at the wrong offset before hydration has decided
   how wide the screen is.
 
@@ -203,14 +203,14 @@ Semantic tokens in `globals.css` (`--ground`, `--raised`, `--ink`, `--line`,
 *darker* than `ground` in light (#fafafa on #ffffff) and *lighter* in dark
 (#0e0e0e on #000000). So "controls on `ground`, card on `raised`" reads as
 elevated in light and sunken in dark. Put controls on `raised` over a `ground`
-surface — that means elevated in both.
+surface, which means elevated in both.
 
 Dark mode follows the device by default and is applied by a **blocking script in
 `<head>`** before first paint. Applying it in an effect gives dark-mode devices a
 white flash on every load.
 
 The six `--s*` colours are validated for colour-vision-deficiency separation in
-both themes, and a swatch never carries meaning alone — every one is rendered
+both themes, and a swatch never carries meaning alone. Every one is rendered
 beside the card's name.
 
 ---
@@ -219,7 +219,7 @@ beside the card's name.
 
 A single CSS rule: `.privacy-mode .sensitive-value { filter: blur(8px) }`. That
 makes it **opt-in per element**, which makes it exactly the kind of feature that
-rots — a new component renders a figure, nobody adds the class, and the leak is
+rots: a new component renders a figure, nobody adds the class, and the leak is
 invisible because everything looks right with privacy mode off.
 
 It has already happened twice (the pie chart, and the CSV import preview).
@@ -242,13 +242,13 @@ using (user_id = auth.jwt() ->> 'sub')
 is what's stored in that column, so the policies are already written correctly.
 
 **For a long time they never ran.** Postgres exempts the `service_role` from RLS
-by design, and every route used `supabaseAdmin` — which is built from the
+by design, and every route used `supabaseAdmin`, which is built from the
 service-role key. So isolation rested on all 25 queries remembering
 `.eq('user_id', …)`. Correct at the time; the risk was always the 26th.
 
 ### How it works now
 
-`lib/supabase.ts` exports **`supabaseForUser()`** — the anon key plus the
+`lib/supabase.ts` exports **`supabaseForUser()`**: the anon key plus the
 caller's Clerk session token, so Postgres actually evaluates the policies. Every
 query against user-owned data goes through it. The `.eq('user_id', …)` filters
 are still there, but they are belt and braces now, not the security boundary:
@@ -260,16 +260,16 @@ called with no template argument. The older JWT-template approach was
 deprecated in April 2025; nothing here shares a Supabase JWT secret with Clerk.
 
 It fails closed. If that integration is not configured, the token isn't trusted,
-the request is treated as anonymous, and queries return nothing — a visibly
-broken dashboard, not a silent leak.
+the request is treated as anonymous, and queries return nothing. That is a
+visibly broken dashboard, not a silent leak.
 
 ### The one exception, and why it isn't going away
 
 `connected_accounts` stays on `supabaseAdmin`. It stores `plaid_access_token`,
 a bearer credential for the user's bank data.
 
-The tempting fix — give it policies like every other table, then `REVOKE` the
-token column from the user-level role — doesn't work. `supabaseForUser()`
+The tempting fix, giving it policies like every other table and then `REVOKE`ing
+the token column from the user-level role, doesn't work. `supabaseForUser()`
 authenticates as the `authenticated` role, and so would a Supabase client
 running in a browser with a Clerk token. Postgres cannot tell them apart: any
 policy permissive enough for the server route is equally permissive for the
@@ -278,7 +278,7 @@ the route that legitimately needs it.
 
 There is no policy that separates them, so the separation stays at the key
 level: only code holding the service-role key touches that table. Routes that
-need both — `cards/remove`, and the Plaid sync routes — hold two clients and say
+need both (`cards/remove`, and the Plaid sync routes) hold two clients and say
 so at the call site.
 
 **`tests/rls-boundary.test.ts` enforces this.** It sweeps the source and fails
@@ -289,7 +289,7 @@ reaches for the nearest client and silently gets a superuser.
 ### Applying it to a fresh database
 
 Run `docs/schema.sql`, then `docs/migrations/001-rls-write-policies.sql`. The
-second is not optional — RLS with a SELECT-only policy **denies every write**,
+second is not optional. RLS with a SELECT-only policy **denies every write**,
 so without it the app reads fine and fails on save.
 
 Note this also settles the Clerk-vs-Supabase-Auth question in Clerk's favour:
@@ -314,13 +314,13 @@ Conventions worth keeping:
 - **Scope E2E assertions to the active panel.** All three public panels are
   always mounted; counting elements proves nothing about what a visitor sees.
 - **Two Playwright workers, not the CPU count.** The Next *dev* server compiles
-  on demand and drops connections under more load — tests that pass alone and
+  on demand and drops connections under more load, so tests pass alone and
   fail in the pack. Two is stable *and* faster (~20s vs ~52s).
 - `e2e/global-setup.ts` warms the routes serially before the workers fan out, so
   no single test pays for a cold compile.
 - `e2e/dashboard.spec.ts` is skipped until `E2E_CLERK_USER_EMAIL` /
   `E2E_CLERK_USER_PASSWORD` exist. Point them at a **seeded throwaway** Supabase
-  project — one of those tests deletes a card.
+  project, since one of those tests deletes a card.
 
 ---
 
@@ -333,7 +333,7 @@ Conventions worth keeping:
   entirely, because a tap produces no hover.
 - **`CardFocusManager` applies its filter in an effect**, not in the event
   handler. On the phone layout the rows don't exist in the DOM when the event
-  fires — they're on another tab.
+  fires, because they're on another tab.
 - **The demo's "Pay this card" is an inert `<span>`.** The real one is an `<a>`
   to the bank; sending a sample visitor to chase.com from a fake Chase card
   isn't ours to do.

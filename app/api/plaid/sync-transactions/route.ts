@@ -4,7 +4,7 @@
 //
 // Why cursor-based?
 //   /transactions/sync returns only what changed since the cursor we last
-//   stored — added, modified, and removed — instead of re-downloading history
+//   stored (added, modified, and removed) instead of re-downloading history
 //   on every call. We persist next_cursor on the connection and pass it back
 //   next time. First run has no cursor, so Plaid sends everything it has.
 //
@@ -47,7 +47,7 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
 
   try {
     // Map Plaid account IDs to our card rows. Anything not in this map (a
-    // checking account on the same login, say) is skipped — we only store
+    // checking account on the same login, say) is skipped, because we only store
     // transactions for cards we actually track.
     const { data: cards } = await db
       .from('cards')
@@ -117,7 +117,7 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
         .in('plaid_transaction_id', removedIds)
     }
 
-    // Only advance the cursor once the writes above succeeded — otherwise a
+    // Only advance the cursor once the writes above succeeded. Otherwise a
     // failed write would be skipped forever on the next sync.
     await supabaseAdmin
       .from('connected_accounts')
@@ -129,7 +129,7 @@ async function syncOne(conn: Connection, userId: string): Promise<SyncResult> {
   } catch (err: unknown) {
     console.error(`Transaction sync failed for ${institution}: ${plaidErrorCode(err)}`)
     // Full detail logged above; only Plaid's public codes travel to the client.
-    // An upsert failure must not surface its Postgres message here — the UI
+    // An upsert failure must not surface its Postgres message here. The UI
     // branches on this field, and it renders it verbatim when it can't match it.
     const code = plaidErrorCodeOrNull(err) ?? 'SYNC_FAILED'
     return {

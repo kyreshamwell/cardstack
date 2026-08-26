@@ -1,11 +1,11 @@
-// lib/cards.ts — card ordering and sync rules.
+// lib/cards.ts: card ordering and sync rules.
 //
 // These live here rather than inline in the page and the sync route so they can
 // be tested directly. Both encode decisions that were wrong once already.
 
 import { calcUtilization } from './utils'
 
-/** Minimum shape needed to rank a card — matches the DB row structurally. */
+/** Minimum shape needed to rank a card. Matches the DB row structurally. */
 export interface RankableCard {
   balance_current: number | null
   balance_limit: number | null
@@ -22,7 +22,7 @@ export interface CardRank {
  * Ranks a card for display order.
  *
  * Cards carrying a balance rank by utilization, because that's the number that
- * affects a credit score — a $300 balance against a $500 limit matters more
+ * affects a credit score: a $300 balance against a $500 limit matters more
  * than $3,000 against $20,000. Cards with a balance but no known limit have no
  * percentage to sort by, so they follow. Anything at zero sinks to the bottom.
  */
@@ -36,7 +36,7 @@ export function rankCard(card: RankableCard): CardRank {
 /**
  * Orders cards for display: highest utilization first.
  *
- * Returns a new array — the caller's order is the stable, creation-ordered one
+ * Returns a new array. The caller's order is the stable, creation-ordered one
  * that card colors are keyed off, and reordering it in place would make a card
  * change color whenever its balance moved.
  */
@@ -73,7 +73,7 @@ export function shouldKeepExistingLimit(
  *
  * Referenced as CSS vars so they re-step when the theme flips. Lives here
  * rather than in the dashboard page because the public demo assigns the same
- * colors from the same list — two copies would drift apart silently.
+ * colors from the same list, and two copies would drift apart silently.
  */
 export const CARD_COLORS = [
   'var(--s1)',

@@ -1,6 +1,6 @@
 // tests/components/CardFocusManager.test.tsx
 //
-// Isolating a card is driven by a window event, not props — both the pie
+// Isolating a card is driven by a window event, not props. Both the pie
 // wedges and the legend rows dispatch `card:focus`, and the manager hides
 // every `[data-card-id]` element that doesn't match. The part that regresses
 // silently is the toggle: clicking the focused card again has to clear, while
@@ -12,7 +12,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { CardFocusManager } from '@/components/cards/CardFocusManager'
 
-/** The rows the manager reaches out and hides — it queries the whole document. */
+/** The rows the manager reaches out and hides. It queries the whole document. */
 function mountCardRows(ids: string[]) {
   const host = document.createElement('div')
   ids.forEach((id) => {

@@ -9,14 +9,14 @@
 //   1. No layout shift. A naive typewriter grows its box one character at a
 //      time and shoves everything below it down the page for a full second.
 //      Each line here renders its FINAL text invisibly to hold the space, with
-//      the typed prefix laid over the top — so the block is full size from the
+//      the typed prefix laid over the top, so the block is full size from the
 //      first frame.
 //   2. It reads as text. The animation is decoration; a screen reader gets the
 //      finished headline from a single sr-only node and never sees the
 //      half-typed states, which would otherwise be announced as they change.
 //
 // `prefers-reduced-motion` skips the whole thing and renders the finished
-// headline — a caret blinking through a sentence is exactly the kind of motion
+// headline. A caret blinking through a sentence is exactly the kind of motion
 // that setting exists to turn off.
 
 import { useEffect, useRef, useState } from 'react'
@@ -32,7 +32,7 @@ interface Props {
   startDelay?: number
   /** Beat between finishing one line and starting the next. */
   lineDelay?: number
-  /** Fires once the last character lands — used to cue the rest of the page. */
+  /** Fires once the last character lands. Used to cue the rest of the page. */
   onDone?: () => void
 }
 
@@ -53,7 +53,7 @@ export function Typewriter({
   // running total needs neither, and the line breaks fall out of the maths.
   const total = lines.reduce((n, line) => n + line.length, 0)
 
-  // onDone is called from a timer, so it must not be a dependency — a parent
+  // onDone is called from a timer, so it must not be a dependency. A parent
   // passing an inline arrow would otherwise restart the animation every render.
   const onDoneRef = useRef(onDone)
   onDoneRef.current = onDone

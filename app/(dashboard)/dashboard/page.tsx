@@ -18,11 +18,11 @@ import { EnableTransactionsButton } from '@/components/cards/EnableTransactionsB
 
 // Queries Supabase, shapes rows into view props, and injects the buttons that
 // need a network. The layout and arithmetic live in DashboardView, which the
-// public demo renders too — so the demo cannot drift from the real thing.
+// public demo renders too, so the demo cannot drift from the real thing.
 //
 // Every query below runs through supabaseForUser(), so Row Level Security is
 // enforced in the database. The `.eq('user_id', …)` filters are kept as belt
-// and braces — they narrow the query, but they are no longer what makes it
+// and braces. They narrow the query, but they are no longer what makes it
 // safe. See lib/supabase.ts.
 export default async function DashboardPage() {
   const { userId } = await auth()
@@ -73,7 +73,7 @@ export default async function DashboardPage() {
   const lastViewedAt = userState?.last_viewed_at ?? null
 
   // Only prompt for connections that actually hold cards. A connection with
-  // none is an orphan — a dead sandbox link, or a bank that was re-connected
+  // none is an orphan: a dead sandbox link, or a bank that was re-connected
   // and left a stale row behind. It can never sync, so it would ask for consent
   // forever and fail every time.
   const connectionsWithCards = new Set(
@@ -96,7 +96,7 @@ export default async function DashboardPage() {
     .sort()
   const lastSyncedAt = syncTimes.length ? syncTimes[syncTimes.length - 1] : null
 
-  // Rows in, view props out. Everything below is shaping — the arithmetic and
+  // Rows in, view props out. Everything below is shaping. The arithmetic and
   // the markup both live in DashboardView, which the public demo also renders.
   const viewCards: DashboardCard[] = allCards.map((card) => {
     const institution = card.connected_accounts as {

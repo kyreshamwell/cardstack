@@ -1,4 +1,4 @@
-// lib/plaid.ts — Plaid API client.
+// lib/plaid.ts: Plaid API client.
 //
 // PlaidApi is the typed client for every Plaid endpoint.
 // Configuration tells it which environment to hit and how to authenticate.
@@ -33,7 +33,7 @@ export const plaidClient = new PlaidApi(configuration)
  *
  * Log this; do not return it to the browser. Plaid's error_message can name the
  * institution and echo request specifics, and the client has nothing to do with
- * either — every route here answers failures with a generic message instead.
+ * either. Every route here answers failures with a generic message instead.
  */
 export function plaidErrorCode(err: unknown): string {
   return plaidErrorCodeOrNull(err) ?? (err instanceof Error ? err.message : 'UNKNOWN_ERROR')
@@ -43,7 +43,7 @@ export function plaidErrorCode(err: unknown): string {
  * Plaid's `error_code` if this really is a Plaid failure, otherwise null.
  *
  * The distinction is what makes a code safe to hand to the browser. Plaid's
- * codes are a short public enum — PRODUCT_NOT_READY, ITEM_LOGIN_REQUIRED — and
+ * codes are a short public enum (PRODUCT_NOT_READY, ITEM_LOGIN_REQUIRED) and
  * the dashboard genuinely branches on them to decide whether to show a reauth
  * or consent button.
  *

@@ -8,8 +8,8 @@
 //   - On a schedule (we'll add a cron job later to keep data fresh)
 //   - After a manual "Refresh" button click
 //
-// This route never touches the client with sensitive data —
-// it reads access_tokens from Supabase server-side, calls Plaid,
+// This route never touches the client with sensitive data.
+// It reads access_tokens from Supabase server-side, calls Plaid,
 // and writes results back to Supabase.
 //
 // Two clients, split by table:
@@ -39,14 +39,14 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
   const db = supabaseForUser()
 
   try {
-    // accountsBalanceGet — NOT accountsGet. accountsGet returns Plaid's cached
+    // accountsBalanceGet, NOT accountsGet. accountsGet returns Plaid's cached
     // copy of the balances, so hitting refresh would hand back the same stale
     // numbers. accountsBalanceGet forces a live pull from the institution.
     const balances = await plaidClient.accountsBalanceGet({
       access_token: conn.plaid_access_token,
     })
 
-    // Liabilities (due dates, minimum payments) is optional — not every
+    // Liabilities (due dates, minimum payments) is optional, and not every
     // institution supports it. A failure here must not lose the balances above.
     const liabilities = new Map<string, CreditCardLiability>()
     try {
@@ -57,7 +57,7 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
         if (l.account_id) liabilities.set(l.account_id, l)
       }
     } catch {
-      // Institution doesn't expose Liabilities — balances still written below.
+      // Institution doesn't expose Liabilities. Balances still written below.
     }
 
     // Which of these cards carry a user-entered limit, so we don't overwrite it.
@@ -120,8 +120,8 @@ async function syncConnection(conn: Connection, userId: string): Promise<SyncRes
       ok: false,
       institution,
       code,
-      // The user has to re-authenticate with the bank to fix this one —
-      // retrying the sync will never clear it.
+      // The user has to re-authenticate with the bank to fix this one.
+      // Retrying the sync will never clear it.
       needsReauth: code === 'ITEM_LOGIN_REQUIRED',
     }
   }
@@ -143,7 +143,7 @@ export async function POST() {
   }
 
   // Connections sync in parallel. Serially, refresh time scaled with the number
-  // of connected banks — two Plaid round-trips each, one after another.
+  // of connected banks: two Plaid round-trips each, one after another.
   const results = await Promise.all(
     connections.map((c) => syncConnection(c as Connection, userId))
   )

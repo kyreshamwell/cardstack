@@ -4,12 +4,12 @@
 //
 // Marking consent is separate from the first sync succeeding: right after
 // consent, Plaid is often still pulling the initial transaction history and
-// returns PRODUCT_NOT_READY. That's a "check back shortly," not a failure —
+// returns PRODUCT_NOT_READY. That's a "check back shortly," not a failure,
 // so we record the consent regardless and let the sync catch up.
 //
 // Stays on supabaseAdmin deliberately. This route only touches
 // connected_accounts, which holds plaid_access_token and is never exposed to
-// the user-level Postgres role — so the .eq('user_id', …) below is the actual
+// the user-level Postgres role, so the .eq('user_id', …) below is the actual
 // security boundary here, not belt and braces as it is elsewhere.
 // See docs/migrations/001-rls-write-policies.sql.
 
@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     .update({ transactions_enabled: true })
     .eq('id', connectionId)
     .eq('user_id', userId)
-    // Distinguishes "saved" from "matched nothing" — without it a connection id
+    // Distinguishes "saved" from "matched nothing". Without it a connection id
     // belonging to another user would report success.
     .select('id')
 

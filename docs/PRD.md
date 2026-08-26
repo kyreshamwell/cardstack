@@ -1,4 +1,4 @@
-# Cardstack — Product Requirements Document
+# Cardstack Product Requirements Document
 **Version:** 1.1  
 **Status:** Phase 1 built, not yet deployed  
 **Owner:** Kyre  
@@ -8,14 +8,14 @@
 
 ## Problem
 
-Managing multiple credit cards means checking 4–5 different apps just to know your balances, due dates, and available credit. There's no single clean view. The result is missed payments, forgotten balances, and a fragmented picture of where you stand financially. Existing tools like Rocket Money are bloated with features you don't need. This app does one thing well — it's your credit card command center.
+Managing multiple credit cards means checking 4 or 5 different apps just to know your balances, due dates, and available credit. There's no single clean view. The result is missed payments, forgotten balances, and a fragmented picture of where you stand financially. Existing tools like Rocket Money are bloated with features you don't need. This app does one thing well: it's your credit card command center.
 
 ---
 
 ## Users
 
 **Primary user**  
-Someone managing 2–5 credit cards who wants a single dashboard to monitor balances, track due dates, and understand their credit utilization without logging into multiple apps.
+Someone managing 2 to 5 credit cards who wants a single dashboard to monitor balances, track due dates, and understand their credit utilization without logging into multiple apps.
 
 **Portfolio audience**  
 Engineers and hiring managers in fintech (Cap One, JP Morgan, DTCC) who want to see real API integration, thoughtful data modeling, and production-level engineering practices.
@@ -24,8 +24,8 @@ Engineers and hiring managers in fintech (Cap One, JP Morgan, DTCC) who want to 
 
 ## Scope
 
-### Phase 1 — MVP (Core dashboard) — **built**
-- [x] Auth (Clerk) — email, plus Google and Apple
+### Phase 1: MVP (Core dashboard), **built**
+- [x] Auth (Clerk): email, plus Google and Apple
 - [x] Connect cards via Plaid, or add them manually
 - [x] Balance + available credit per card
 - [x] Due dates + payment status
@@ -33,24 +33,24 @@ Engineers and hiring managers in fintech (Cap One, JP Morgan, DTCC) who want to 
 - [x] Credit utilization per card
 - [x] Transactions and detected recurring charges
 - [x] CSV import for cards Plaid can't reach
-- [x] Public demo at `/demo` — the real dashboard on fixture data
+- [x] Public demo at `/demo`, the real dashboard on fixture data
 - [x] Privacy mode, dark mode, phone layout
 
 **Not done, and blocking real users:**
 - [ ] Reads still use the Supabase service-role key, bypassing RLS
 - [ ] Plaid is still in sandbox
 - [ ] Clerk is still a development instance
-- [ ] No background sync — data only refreshes while the app is open
+- [ ] No background sync, so data only refreshes while the app is open
 
-### Phase 2 — Budgeting layer
-- Spending by category — **the data is already stored on every transaction,
+### Phase 2: Budgeting layer
+- Spending by category. **The data is already stored on every transaction,
   this view was deferred and never built**
 - Monthly spend by category
 - Budget limits per category
 - Savings goal calculator
 - Bill total for the month
 
-### Phase 3 — AI layer
+### Phase 3: AI layer
 - Spending habit insights
 - Budget recommendations
 - Natural language math
@@ -88,7 +88,7 @@ Feature branches off main. PRs with a short description of what changed and why.
   approaches that were tried and abandoned
 - Architecture decisions recorded in `/docs/decisions/`
 - `DEVLOG.md` logs what was built and decided each session
-- Every source file carries a header comment explaining its job — those are the
+- Every source file carries a header comment explaining its job. Those are the
   primary documentation; the docs above are the map
 
 ### Security
@@ -100,7 +100,7 @@ Plaid access tokens stored encrypted in Supabase, never exposed to the client. R
 
 | Constraint | Detail |
 |---|---|
-| Monetization | None — portfolio demonstration, always free |
+| Monetization | None. Portfolio demonstration, always free |
 | Plaid environment | Sandbox first, then development mode for real accounts |
 | Supabase uptime | Cron ping to prevent inactivity pause on free tier |
 | Scope creep | No investment tracking, no bank account aggregation in MVP |

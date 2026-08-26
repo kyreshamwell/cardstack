@@ -1,4 +1,4 @@
-// lib/demo-data.ts — the fixture account behind the public demo.
+// lib/demo-data.ts: the fixture account behind the public demo.
 //
 // Built to exercise every branch of the dashboard rather than to look tidy:
 // there is a card over the 30% utilization target (so "Pay before close" has
@@ -8,13 +8,13 @@
 //
 // Dates are relative to render time rather than hard-coded, so the demo never
 // shows a statement that closed last year. They're built in LOCAL time on
-// purpose — the components parse `${date}T12:00:00`, i.e. local noon, and
+// purpose, because the components parse `${date}T12:00:00`, i.e. local noon, and
 // toISOString() would push a late-in-the-day render onto tomorrow.
 //
 // Everything is a function of an explicit `now`, and that is not stylistic.
 // These were module-level constants evaluated at import time, so the server
 // computed them once when the module first loaded and the browser computed them
-// again at hydration — two different clocks, minutes apart. The dashboard
+// again at hydration, on two different clocks, minutes apart. The dashboard
 // rendered "Updated 12 min ago" from the server and "8 min ago" on the client,
 // and React threw a hydration mismatch on every single page load. Threading one
 // timestamp through from the server render fixes it at the source: both sides
@@ -34,7 +34,7 @@ function day(now: number, n: number): string {
   return `${d.getFullYear()}-${month}-${date}`
 }
 
-/** An ISO timestamp `n` hours before `now` — used for "new since last visit". */
+/** An ISO timestamp `n` hours before `now`, for "new since last visit". */
 function hoursAgo(now: number, n: number): string {
   return new Date(now - n * 3600_000).toISOString()
 }
@@ -54,7 +54,7 @@ export interface DemoData {
 /**
  * Builds the whole fixture account from one timestamp.
  *
- * Pass the SAME `now` on the server and on the client — see the note at the top
+ * Pass the SAME `now` on the server and on the client. See the note at the top
  * of this file for what happens otherwise.
  */
 export function buildDemoData(now: number): DemoData {
@@ -102,7 +102,7 @@ export function buildDemoData(now: number): DemoData {
       due_date: day(now, 11),
     },
     {
-      // Added by hand, so no limit came from anywhere — the utilization ring
+      // Added by hand, so no limit came from anywhere. The utilization ring
       // has nothing to draw and the row has to stay readable regardless.
       id: 'demo-store',
       name: 'Store Card',
@@ -133,7 +133,7 @@ export function buildDemoData(now: number): DemoData {
     },
   ]
 
-  // Plaid's sign convention: POSITIVE is money out, NEGATIVE is money in — so
+  // Plaid's sign convention: POSITIVE is money out, NEGATIVE is money in, so
   // the payments read as credits. The first four sit inside the "new since last
   // visit" window set by `lastViewed`, which is what shows the "4 new" marker.
   const transactions: TransactionRow[] = [
@@ -316,7 +316,7 @@ export function buildDemoData(now: number): DemoData {
     {
       id: 'tx-17',
       card_id: 'demo-store',
-      name: 'REFUND — RETURN',
+      name: 'RETURN REFUND',
       merchant_name: null,
       amount: -49.99,
       transaction_date: day(now, -12),
@@ -384,7 +384,7 @@ export function buildDemoData(now: number): DemoData {
     },
     {
       // Annual, so the list has to normalize it to a monthly figure to rank it
-      // against the others — that normalization is the point of the panel.
+      // against the others, and that normalization is the point of the panel.
       id: 'rec-5',
       card_id: 'demo-quicksilver',
       description: 'AMZN PRIME MEMBERSHIP',

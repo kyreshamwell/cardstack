@@ -1,7 +1,7 @@
 'use client'
 // components/landing/LandingHero.tsx
 //
-// The pitch — the centre panel of the filmstrip in MarketingFrame, with the
+// The pitch: the centre panel of the filmstrip in MarketingFrame, with the
 // demo one viewport to its left and sign-in one viewport to its right.
 //
 // Two-column: the argument on the left, the product on the right. The first
@@ -9,7 +9,7 @@
 // hundred other pages don't and showed none of the one thing worth showing.
 //
 // The sequence matters more than any single effect. The headline types itself
-// out, and only when it lands does everything under it rise in — so the page
+// out, and only when it lands does everything under it rise in, so the page
 // has a beginning and an end rather than one simultaneous arrival. Springs
 // throughout, so nothing rides a rigid curve.
 //
@@ -62,7 +62,7 @@ export function LandingHero() {
               />
               <span className="relative h-1.5 w-1.5 rounded-full bg-good" />
             </span>
-            Live demo — no account needed
+            Live demo, no account needed
           </motion.p>
 
           <h1 className="mt-6 text-[clamp(2.5rem,5.2vw,4rem)] font-semibold tracking-tight leading-[1.02]">
@@ -81,15 +81,15 @@ export function LandingHero() {
             variants={{ hidden: {}, show: {} }}
           >
             <motion.p className="mt-6 max-w-md text-base text-ink-2 leading-relaxed" variants={rise}>
-              Balances, utilization and due dates across every card you carry —
-              sorted by what actually moves your credit score, on a dashboard
+              Balances, utilization and due dates across every card you carry.
+              Sorted by what actually moves your credit score, on a dashboard
               that never scrolls.
             </motion.p>
 
             <motion.div className="mt-9 flex flex-wrap items-center gap-3" variants={rise}>
               {/*
                 Real Links, not buttons with state: these are genuine routes, so
-                they prefetch, middle-click and copy — while the shared layout
+                they prefetch, middle-click and copy, while the shared layout
                 keeps the frame mounted, so following one slides rather than
                 reloads.
               */}
@@ -123,7 +123,7 @@ export function LandingHero() {
             </motion.div>
 
             <motion.p className="mt-5 text-xs text-ink-3" variants={rise}>
-              The demo is the real dashboard on sample data — same components,
+              The demo is the real dashboard on sample data: same components,
               same code. Nothing to install, nothing to connect.
             </motion.p>
           </motion.div>

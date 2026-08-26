@@ -3,8 +3,8 @@
 //
 // One credit card, as a flat row with a utilization ring.
 //
-//   Face      — ring (utilization), name, mask, due, statement balance
-//   Expanded  — current balance, available, limit, minimum, close date, actions
+//   Face:     ring (utilization), name, mask, due, statement balance
+//   Expanded: current balance, available, limit, minimum, close date, actions
 //
 // The ring is colored by card IDENTITY, matching the ring chart and its legend.
 // It deliberately does NOT switch to severity colors: the same visual form
@@ -71,7 +71,7 @@ export function CardTile({ card, accent, actions, limitControl }: Props) {
   const headline = card.statement_balance ?? card.balance_current
   const headlineIsStatement = card.statement_balance != null
 
-  // A $0 minimum means nothing is actually due — no red.
+  // A $0 minimum means nothing is actually due, so no red.
   const showOverdue = dueStatus === 'overdue' && card.minimum_payment !== 0
 
   const filled = utilization != null ? Math.max(0, Math.min(utilization, 100)) : 0

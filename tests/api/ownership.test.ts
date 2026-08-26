@@ -2,7 +2,7 @@
 //
 // Every one of these routes takes an id straight from the request body. That is
 // the classic multi-tenant hole: user B posts user A's card id and mutates or
-// deletes it. Each route is checked for three things — it refuses anonymous
+// deletes it. Each route is checked for three things: it refuses anonymous
 // callers, it scopes every write to the caller, and an id the caller doesn't
 // own changes nothing and is reported as such rather than as success.
 
@@ -19,8 +19,8 @@ vi.mock('@clerk/nextjs/server', () => ({
 }))
 
 // Both clients resolve to the same recorder. The routes now split their work
-// between them — user data through supabaseForUser(), and connected_accounts
-// (which holds plaid_access_token) still through supabaseAdmin — but the
+// between them: user data through supabaseForUser(), and connected_accounts
+// (which holds plaid_access_token) still through supabaseAdmin. But the
 // assertions below care about the queries issued, not which client issued them.
 vi.mock('@/lib/supabase', () => ({
   get supabaseAdmin() {
@@ -42,7 +42,7 @@ const req = (body: unknown) =>
     body: JSON.stringify(body),
   })
 
-/** Rows a select returns — [] means "no row the caller owns". */
+/** Rows a select returns. [] means "no row the caller owns". */
 function setup(reads: Record<string, Record<string, unknown>[]> = {}) {
   mocks.supabase = createFakeSupabase({ reads })
 }

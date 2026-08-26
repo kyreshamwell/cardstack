@@ -12,8 +12,8 @@ vi.mock('@clerk/nextjs/server', () => ({
 }))
 
 // Both clients resolve to the same recorder. The routes now split their work
-// between them — user data through supabaseForUser(), and connected_accounts
-// (which holds plaid_access_token) still through supabaseAdmin — but the
+// between them: user data through supabaseForUser(), and connected_accounts
+// (which holds plaid_access_token) still through supabaseAdmin. But the
 // assertions below care about the queries issued, not which client issued them.
 vi.mock('@/lib/supabase', () => ({
   get supabaseAdmin() {
@@ -91,7 +91,7 @@ beforeEach(() => {
 })
 
 // ── Tests ───────────────────────────────────────────────────────────────────
-describe('POST /api/plaid/sync-transactions — auth', () => {
+describe('POST /api/plaid/sync-transactions: auth', () => {
   it('rejects an unauthenticated request without touching anything', async () => {
     mocks.userId = null
     setup()
@@ -104,7 +104,7 @@ describe('POST /api/plaid/sync-transactions — auth', () => {
   })
 })
 
-describe('POST /api/plaid/sync-transactions — tenant isolation', () => {
+describe('POST /api/plaid/sync-transactions: tenant isolation', () => {
   it('scopes reads, updates and deletes to the signed-in user', async () => {
     setup()
     mocks.transactionsSync.mockResolvedValue(
@@ -135,7 +135,7 @@ describe('POST /api/plaid/sync-transactions — tenant isolation', () => {
   })
 })
 
-describe('POST /api/plaid/sync-transactions — cursor', () => {
+describe('POST /api/plaid/sync-transactions: cursor', () => {
   it('sends the stored cursor so it fetches only what changed', async () => {
     setup()
 
@@ -203,7 +203,7 @@ describe('POST /api/plaid/sync-transactions — cursor', () => {
   })
 })
 
-describe('POST /api/plaid/sync-transactions — writes', () => {
+describe('POST /api/plaid/sync-transactions: writes', () => {
   it('upserts on the Plaid id so re-running does not duplicate', async () => {
     setup()
 
@@ -276,7 +276,7 @@ describe('POST /api/plaid/sync-transactions — writes', () => {
   })
 })
 
-describe('POST /api/plaid/sync-transactions — failure handling', () => {
+describe('POST /api/plaid/sync-transactions: failure handling', () => {
   it('flags a consent error so the UI can prompt instead of just erroring', async () => {
     setup()
     mocks.transactionsSync.mockRejectedValue({
@@ -304,7 +304,7 @@ describe('POST /api/plaid/sync-transactions — failure handling', () => {
   })
 
   it('flags PRODUCT_NOT_READY as pending, not as a real failure', async () => {
-    // Plaid is still building history right after consent — it resolves itself.
+    // Plaid is still building history right after consent, and it resolves itself.
     setup()
     mocks.transactionsSync.mockRejectedValue({
       response: { data: { error_code: 'PRODUCT_NOT_READY' } },

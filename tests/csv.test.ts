@@ -1,6 +1,6 @@
 // tests/csv.test.ts
 //
-// Bank CSV parsing — the highest-consequence pure logic in the project.
+// Bank CSV parsing: the highest-consequence pure logic in the project.
 //
 // Getting the sign convention backwards doesn't throw or warn: it silently
 // imports every purchase as a refund and understates what you owe. The parser

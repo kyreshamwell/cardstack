@@ -4,7 +4,7 @@
 //
 // The date tests are the ones worth reading: a due date is a DATE, not an
 // instant, and measuring the gap in elapsed hours made the answer depend on the
-// time of day — a card due today read "due tomorrow" in the morning and
+// time of day. A card due today read "due tomorrow" in the morning and
 // "overdue" after lunch. Statement-close prediction has the same shape.
 //
 import { describe, expect, it, afterEach, vi } from 'vitest'
@@ -98,7 +98,7 @@ describe('nextStatementClose', () => {
 
   it('keeps stepping until it lands in the future, not just once', () => {
     freeze()
-    // Five months stale — a single +1 month would still be in the past.
+    // Five months stale, so a single +1 month would still be in the past.
     const next = nextStatementClose('2026-03-05')
     expect(next).not.toBeNull()
     expect(next!.getTime()).toBeGreaterThan(NOW.getTime())
@@ -146,7 +146,7 @@ describe('daysUntil', () => {
   })
 
   // Regression: this measured elapsed hours and rounded up, so the answer moved
-  // with the clock — a card due today read as "tomorrow" in the morning and as
+  // with the clock. A card due today read as "tomorrow" in the morning and as
   // overdue in the afternoon.
   it('returns 0 for any time today, morning or night', () => {
     const today = new Date()
@@ -174,7 +174,7 @@ describe('daysUntil', () => {
   })
 })
 
-describe('getDueDateStatus — same-day handling', () => {
+describe('getDueDateStatus: same-day handling', () => {
   it('never calls a card due today overdue, whatever the hour', () => {
     const today = new Date()
 

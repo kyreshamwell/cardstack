@@ -2,14 +2,14 @@
 //
 // Every write control in the dashboard sets a `saving` flag, fires a fetch,
 // then calls router.refresh() on success. The trap is that **router.refresh()
-// does not unmount the component** — it re-fetches server data and React
+// does not unmount the component**. It re-fetches server data and React
 // reconciles, so client state survives. Code that clears the flag only on the
 // error path leaves it stuck at true forever, and the control comes back
 // permanently disabled reading "Saving…".
 //
 // That shipped in four components at once, and it is invisible in the happy
 // path you test by hand: the dialog closes, everything looks fine, and the
-// button is only wrong the SECOND time you open it. Hence this test — it always
+// button is only wrong the SECOND time you open it. Hence this test, which always
 // performs the action twice.
 
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
@@ -24,7 +24,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ refresh, push: vi.fn(), replace: vi.fn() }),
 }))
 
-/** A fetch that always succeeds — the path that used to strand the flag. */
+/** A fetch that always succeeds, the path that used to strand the flag. */
 function fetchOk() {
   return vi.fn().mockResolvedValue({
     ok: true,

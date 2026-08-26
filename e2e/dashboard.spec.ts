@@ -1,7 +1,7 @@
 // e2e/dashboard.spec.ts
 //
 // The signed-in surface. These are the tests that would catch a regression no
-// other layer can see — the dashboard assembling real data from Supabase and
+// other layer can see: the dashboard assembling real data from Supabase and
 // Plaid through a real browser.
 //
 // They are SKIPPED until a dedicated test account is configured, because they
@@ -12,7 +12,7 @@
 //   E2E_CLERK_USER_PASSWORD=…
 //
 // Create that user in the Clerk dashboard as a normal user. Point it at a
-// Supabase project seeded with fixture cards — NOT your own account, or a
+// Supabase project seeded with fixture cards, NOT your own account, or a
 // failing test could delete real cards.
 //
 // Clerk's bot protection blocks scripted sign-in on production instances;
@@ -20,7 +20,7 @@
 // exists rather than just typing into the form.
 //
 // Note the sign-in form now lives in the (marketing) filmstrip rather than on
-// its own page, and Clerk runs in `routing="virtual"` — the multi-step flow
+// its own page, and Clerk runs in `routing="virtual"`. The multi-step flow
 // happens in place without changing the URL, so the steps below fill fields on
 // one screen rather than following Clerk's own sub-paths.
 
@@ -83,7 +83,7 @@ test.describe('signed-in dashboard', () => {
 
   test('the utilization explainer is NOT shown here', async ({ page }) => {
     // The counterpart to the demo's assertion. `DashboardView`'s `explain` prop
-    // defaults to false and only the demo opts in — the demo is a teaching
+    // defaults to false and only the demo opts in. The demo is a teaching
     // surface, your own dashboard isn't, and a permanent explainer you can't
     // dismiss is clutter. The section itself must still be here.
     await expect(page.getByText('Lower reported utilization')).toBeVisible()

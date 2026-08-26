@@ -6,7 +6,7 @@
 // holds their real source rather than a reimplementation.
 //
 // Note what a pie can and can't say. It's a part-to-whole form, so the wedges
-// are each card's SHARE OF TOTAL BALANCE — "where is my debt concentrated",
+// are each card's SHARE OF TOTAL BALANCE: "where is my debt concentrated",
 // not "which card is near its limit". Utilization is the number that moves a
 // credit score, so it rides along in the legend: passing each card's limit as
 // maxValue makes the legend's percentage read as utilization, not share.
@@ -52,14 +52,14 @@ export function BalancePie({ slices, size = DEFAULT_SIZE }: Props) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   // The center value animates through NumberFlow, a custom element that doesn't
-  // exist until the client defines it — so server and client HTML disagree and
+  // exist until the client defines it, so server and client HTML disagree and
   // React throws a hydration error. Rendering the chart only after mount avoids
   // the mismatch entirely; the placeholder holds the same footprint so nothing
   // shifts when it appears.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  // Cards carrying no balance would be zero-width wedges — invisible, but still
+  // Cards carrying no balance would be zero-width wedges: invisible, but still
   // consuming a color slot and a legend row.
   const withBalance = slices.filter((s) => s.balance > 0)
 
@@ -78,13 +78,14 @@ export function BalancePie({ slices, size = DEFAULT_SIZE }: Props) {
   const legendItems = withBalance.map((s) => ({
     label: s.name,
     value: s.balance,
-    // maxValue drives the legend percentage — limit, so it reads as utilization.
+    // maxValue drives the legend percentage. Passing the limit makes that
+    // percentage read as utilization.
     maxValue: s.limit ?? undefined,
     color: s.color,
   }))
 
   // LegendItem exposes hover but not click, and the chart drives the same
-  // hoveredIndex — so a click anywhere here resolves to whatever the pointer
+  // hoveredIndex, so a click anywhere here resolves to whatever the pointer
   // is currently over, slice or row.
   //
   // That alone made the chart completely dead to touch: a tap produces no
@@ -93,7 +94,7 @@ export function BalancePie({ slices, size = DEFAULT_SIZE }: Props) {
   // nothing on desktop.
   //
   // The fallback resolves the row from the event target instead. `legend-row`
-  // is a marker class on LegendItem — a class we already pass, so the vendored
+  // is a marker class on LegendItem, a class we already pass, so the vendored
   // component doesn't have to be forked to get a per-row hit target.
   const legendRef = useRef<HTMLDivElement>(null)
 
@@ -129,10 +130,11 @@ export function BalancePie({ slices, size = DEFAULT_SIZE }: Props) {
           {/*
             Privacy mode is CSS on `.sensitive-value`, so anything rendering a
             figure has to opt in by name. The center value gets it via
-            valueClassName rather than className — className is the container,
-            which would blur the "Total balance" label too, and a label isn't
-            the secret. Passing valueClassName replaces the default outright,
-            so the vendored default has to be re-included, not appended to.
+            valueClassName rather than className, because className is the
+            container, which would blur the "Total balance" label too, and a
+            label isn't the secret. Passing valueClassName replaces the default
+            outright, so the vendored default has to be re-included, not
+            appended to.
           */}
           <PieCenter
             defaultLabel="Total balance"
@@ -157,7 +159,7 @@ export function BalancePie({ slices, size = DEFAULT_SIZE }: Props) {
               Here className IS the right hook: LegendValue puts it on the span
               wrapping both the amount and the utilization percentage, and the
               blur filter inherits down to both. Utilization is as revealing as
-              the balance — CardTile already blurs its ring percentage.
+              the balance, and CardTile already blurs its ring percentage.
             */}
             <LegendValue
               className="sensitive-value text-xs tabular-nums text-ink-2"

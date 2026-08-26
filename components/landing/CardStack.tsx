@@ -4,19 +4,19 @@
 // The thing the product is named after, doing what the product does.
 //
 // Five cards in the app's own six-colour identity palette, ordered the way the
-// dashboard orders them — highest utilization at the front. So it isn't
+// dashboard orders them, highest utilization at the front. So it isn't
 // decoration bolted onto a hero: it's the screen you get after signing up,
 // compressed into one object, and it reads before any of the copy does.
 //
 // It went through a flat version first, where each card sat flush below the
-// last. That renders as a table, not a stack — the overlap IS the idea, and it
+// last. That renders as a table, not a stack. The overlap IS the idea, and it
 // needs the cards to cover each other so the fan means something.
 //
 // Motion notes, since this is the piece carrying the page:
 //   - Springs, never durations. Cards settle rather than arriving on a curve,
 //     and staggering the springs makes the stack assemble instead of appear.
 //   - The tilt tracks the pointer through a spring, so it lags the cursor
-//     slightly. That lag is the effect — a transform wired straight to mouse
+//     slightly. That lag is the effect: a transform wired straight to mouse
 //     coordinates feels stuck to the glass.
 //   - Hovering fans the stack open, which is the one interaction on the page
 //     that rewards poking at it.
@@ -46,7 +46,7 @@ const CARDS: StackCard[] = [
 
 const CARD_W = 300
 const CARD_H = 184
-// The closed sliver is sized to clear the bank label AND the card name — at 44
+// The closed sliver is sized to clear the bank label AND the card name. At 44
 // it sliced the names in half, which looks like a rendering bug rather than a
 // stack. Whatever is visible has to be a complete thought.
 const CLOSED = 56
@@ -79,7 +79,7 @@ export function CardStack() {
     if (!box) return
     // The fan opens on MOVEMENT, not on a separate enter event. Relying on
     // mouseenter left the stack shut for any input path that produces movement
-    // without a clean enter — and movement is the more honest trigger anyway:
+    // without a clean enter, and movement is the more honest trigger anyway:
     // if the tilt is tracking you, the stack is under your cursor.
     if (!open) setOpen(true)
     px.set((e.clientX - box.left) / box.width - 0.5)
@@ -148,7 +148,7 @@ export function CardStack() {
             {/*
               A dark scrim over every card, not just the pale ones. The palette
               runs from a mid blue to an amber, and white text is unreadable on
-              the amber without it — scrimming only some cards would break the
+              the amber without it. Scrimming only some cards would break the
               family resemblance, so all of them get it.
             */}
             <div
@@ -177,7 +177,7 @@ export function CardStack() {
                 )}
               </div>
 
-              {/* Only the front card shows a balance — the rest are covered to
+              {/* Only the front card shows a balance. The rest are covered to
                   roughly here anyway, and repeating it five times turns the
                   stack back into the list this replaced. */}
               <div className="flex items-end justify-between gap-3">

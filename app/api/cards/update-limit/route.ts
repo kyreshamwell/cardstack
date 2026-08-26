@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     .eq('id', card_id)
     .eq('user_id', userId) // ensures users can only update their own cards
     // Returning the affected rows is what makes a no-op distinguishable from a
-    // success. Without it, a card id belonging to someone else — or one deleted
-    // in another tab — matches zero rows and still reports success.
+    // success. Without it, a card id belonging to someone else (or one deleted
+    // in another tab) matches zero rows and still reports success.
     .select('id')
 
   if (error) {

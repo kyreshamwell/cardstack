@@ -4,7 +4,7 @@
 // Sends the user through Plaid's UPDATE MODE to grant consent for Transactions
 // on a bank that was connected before we asked for it.
 //
-// Update mode reuses the existing Item and access_token — no new connection is
+// Update mode reuses the existing Item and access_token. No new connection is
 // created, so cards and balances are untouched and nothing gets duplicated.
 
 import { useState, useEffect, useCallback } from 'react'
@@ -63,7 +63,7 @@ export function EnableTransactionsButton({ connectionId, institutionName }: Prop
         (f: { pending: boolean }) => f.pending
       )
       if (stillBuilding) {
-        setMessage('Connected — Plaid is still pulling history, check back in a minute.')
+        setMessage('Connected. Plaid is still pulling history, check back in a minute.')
       }
 
       router.refresh()

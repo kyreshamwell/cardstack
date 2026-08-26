@@ -1,8 +1,8 @@
-// app/(dashboard)/layout.tsx — chrome for every signed-in route.
+// app/(dashboard)/layout.tsx: chrome for every signed-in route.
 //
 // Deliberately thin. The frame itself lives in AppShell so the public demo
 // wears the identical thing rather than a copy that drifts; all this layout
-// decides is what goes in the right-hand nav slot — for the signed-in app,
+// decides is what goes in the right-hand nav slot: for the signed-in app,
 // the account button.
 //
 import { AppShell } from '@/components/dashboard/AppShell'

@@ -1,7 +1,7 @@
 // tests/components/DashboardView.test.tsx
 //
 // DashboardView is the single view behind BOTH the real dashboard and the
-// public demo — the real page passes Supabase rows, the demo passes fixtures.
+// public demo: the real page passes Supabase rows, the demo passes fixtures.
 // That's what stops the demo drifting from the app, so the props that differ
 // between them are the ones worth pinning.
 //
@@ -81,7 +81,7 @@ describe('the `explain` prop', () => {
     renderView()
 
     expect(screen.queryByText(EXPLAINER)).not.toBeInTheDocument()
-    // The section itself is still there — only the teaching line is dropped.
+    // The section itself is still there. Only the teaching line is dropped.
     expect(screen.getByText('Lower reported utilization')).toBeInTheDocument()
   })
 
@@ -159,7 +159,7 @@ describe('the phone layout', () => {
     )
 
     // And the filter actually applied, despite the rows not existing in the DOM
-    // at the moment the event fired — CardFocusManager applies in an effect for
+    // at the moment the event fired. CardFocusManager applies in an effect for
     // exactly this reason, so the assertion has to wait for that effect rather
     // than read straight after the dispatch.
     await waitFor(() => {

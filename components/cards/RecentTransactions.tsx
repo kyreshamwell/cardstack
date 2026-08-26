@@ -1,6 +1,6 @@
 // components/cards/RecentTransactions.tsx
 //
-// Server component — renders the transaction list inside its panel. The panel
+// Server component. Renders the transaction list inside its panel. The panel
 // supplies the heading and the "N new" count; this is just the body.
 //
 // Sign convention comes straight from Plaid: POSITIVE amounts are money out
@@ -49,7 +49,7 @@ export function RecentTransactions({
     )
   }
 
-  // Compared against created_at (when we stored it), not transaction_date — a
+  // Compared against created_at (when we stored it), not transaction_date. A
   // charge dated last week that only synced today is still new to you.
   const cutoff = newSince ? new Date(newSince).getTime() : null
   const isNew = (tx: TransactionRow) =>

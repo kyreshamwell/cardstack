@@ -1,7 +1,7 @@
 // tests/helpers/supabase-fake.ts
 //
 // A minimal stand-in for the Supabase client, built for asserting on WHAT a
-// route wrote and WHICH filters it used — not for simulating Postgres.
+// route wrote and WHICH filters it used, not for simulating Postgres.
 //
 // That focus is deliberate. The failure we most need to catch is a query that
 // forgets `.eq('user_id', …)`: every route uses the service-role key, which

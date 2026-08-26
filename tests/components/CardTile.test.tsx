@@ -47,7 +47,7 @@ function card(overrides: Partial<CardTileData> = {}): CardTileData {
 const renderTile = (overrides: Partial<CardTileData> = {}, props = {}) =>
   render(<CardTile card={card(overrides)} accent="var(--s1)" {...props} />)
 
-describe('CardTile — which balance leads', () => {
+describe('CardTile: which balance leads', () => {
   it('leads with the statement balance, the amount that avoids interest', () => {
     renderTile()
 
@@ -71,7 +71,7 @@ describe('CardTile — which balance leads', () => {
   })
 })
 
-describe('CardTile — due dates', () => {
+describe('CardTile: due dates', () => {
   it('counts down the days remaining', () => {
     renderTile({ due_date: daysFromNow(6) })
     expect(screen.getByText(/due in 6d/)).toBeInTheDocument()
@@ -105,7 +105,7 @@ describe('CardTile — due dates', () => {
   })
 })
 
-describe('CardTile — utilization', () => {
+describe('CardTile: utilization', () => {
   it('shows utilization against the limit', () => {
     renderTile({ balance_current: 1240, balance_limit: 5000 })
     expect(screen.getByText('25%')).toBeInTheDocument()
@@ -118,7 +118,7 @@ describe('CardTile — utilization', () => {
   })
 })
 
-describe('CardTile — expanding', () => {
+describe('CardTile: expanding', () => {
   it('keeps the detail rows hidden until expanded', () => {
     renderTile()
 
@@ -198,7 +198,7 @@ describe('CardTile — expanding', () => {
   })
 })
 
-describe('CardTile — identity', () => {
+describe('CardTile: identity', () => {
   it('shows the mask for a connected card', () => {
     renderTile({ mask: '4823' })
     expect(screen.getByText(/···· 4823/)).toBeInTheDocument()

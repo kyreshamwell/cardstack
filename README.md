@@ -2,11 +2,11 @@
 
 > Your credit card command center.
 
-One dashboard for every credit card you carry — balances, due dates, and the
+One dashboard for every credit card you carry: balances, due dates, and the
 utilization that actually moves your credit score. Built as a portfolio project
 targeting fintech engineering roles.
 
-**[Try the demo](/demo)** — the real dashboard on sample data. No sign-up, no
+**[Try the demo](/demo)**: the real dashboard on sample data. No sign-up, no
 redirect. It renders the same components the signed-in app does, so it can't
 drift from the real thing.
 
@@ -14,15 +14,15 @@ drift from the real thing.
 
 ## Features
 
-- **Connect via Plaid** or add cards by hand — mix and match
-- **Utilization first** — cards sort by what moves your score, not by name
-- **Lower reported utilization** — utilization is reported when a statement
+- **Connect via Plaid** or add cards by hand, mixing the two freely
+- **Utilization first.** Cards sort by what moves your score, not by name
+- **Lower reported utilization.** Utilization is reported when a statement
   *closes*, not when payment is due, so the dashboard says what to pay before
   that date and what it buys you (`77% → 30%`)
-- **Balance chart** — click a slice or legend row to isolate one card
+- **Balance chart.** Click a slice or legend row to isolate one card
 - **Recent activity and detected subscriptions**, normalized to a monthly figure
-- **Privacy mode** — one tap blurs every figure on screen, for screen-sharing
-- **Dark mode** — follows your device, applied before first paint (no flash)
+- **Privacy mode.** One tap blurs every figure on screen, for screen-sharing
+- **Dark mode** follows your device, applied before first paint (no flash)
 - **Sign in with Google, Apple, or email**, all resolving to one account
 - **Desktop fits one screen and never scrolls**; phones get a tabbed layout with
   ordinary document scrolling
@@ -49,7 +49,7 @@ drift from the real thing.
 
 ```bash
 npm install
-cp .env.example .env.local   # then fill it in — see below
+cp .env.example .env.local   # then fill it in, see below
 npm run dev
 ```
 
@@ -67,7 +67,7 @@ signing in needs Clerk, and connecting a card needs Plaid and Supabase.
 | `PLAID_CLIENT_ID` / `PLAID_SECRET` | [Plaid dashboard](https://dashboard.plaid.com) → Keys |
 | `PLAID_ENV` | `sandbox` to start |
 | `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → Project Settings → API |
-| `SUPABASE_SERVICE_ROLE_KEY` | Same page — **server-only, never expose** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Same page. **Server-only, never expose** |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` in development |
 
 Run `docs/schema.sql` in Supabase's SQL editor to create the tables and
@@ -97,9 +97,9 @@ Services ID and key from an Apple Developer account.
 ```
 app/
 ├── layout.tsx                # Root: ClerkProvider, fonts, pre-paint theme script
-├── (marketing)/              # Public surface — landing, demo, auth
+├── (marketing)/              # Public surface: landing, demo, auth
 │   ├── layout.tsx            # Renders MarketingFrame; the pages render null
-│   ├── page.tsx              # /            — owns the signed-in redirect
+│   ├── page.tsx              # /            owns the signed-in redirect
 │   ├── demo/page.tsx         # /demo
 │   └── sign-in|sign-up/      # Clerk catch-all routes
 ├── (dashboard)/              # Protected surface
@@ -152,7 +152,7 @@ docs/
 ## Architecture
 
 **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** covers how the pieces fit and
-why — including approaches that were tried and abandoned, so they don't get
+why, including approaches that were tried and abandoned, so they don't get
 proposed again.
 
 The short version, and the two things most likely to surprise you:
@@ -162,8 +162,8 @@ The short version, and the two things most likely to surprise you:
   Anything needing a network is injected as a prop, because that's what the demo
   replaces.
 - **All three public panels are mounted at once**, arranged as a horizontal
-  filmstrip. So `[data-card-id]` finds the demo's rows from the landing page —
-  scope queries with `data-panel` / `data-active`.
+  filmstrip. So `[data-card-id]` finds the demo's rows from the landing page.
+  Scope queries with `data-panel` / `data-active`.
 
 ---
 
@@ -177,23 +177,23 @@ npm run test:all  # everything
 
 Three layers, each covering what the one below it structurally cannot.
 
-**Pure logic** — currency and utilization math, due-date boundaries,
+**Pure logic** covers currency and utilization math, due-date boundaries,
 statement-close prediction, recurring-cadence conversion, CSV parsing, and the
 demo fixtures. Fast, no environment.
 
-**API routes** — run against a fake Supabase client that records every query.
+**API routes** run against a fake Supabase client that records every query.
 Recording the filters lets a test assert tenant scoping directly; an in-memory
 database could not, since a query missing its filter still returns rows.
 Tenant isolation is enforced by Postgres row-level security (see
 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#security)), and
-`tests/rls-boundary.test.ts` sweeps the source to keep the service-role key —
-which bypasses RLS — confined to the one table that needs it.
+`tests/rls-boundary.test.ts` sweeps the source to keep the service-role key,
+which bypasses RLS, confined to the one table that needs it.
 
-**Components (jsdom)** — prioritised by blast radius rather than visibility.
+**Components (jsdom)** are prioritised by blast radius rather than visibility.
 `ImportCsvButton` first, because its sign toggle silently turns every purchase
 into a refund if it's wrong.
 
-**End-to-end (Playwright)** — that the app boots, that middleware actually
+**End-to-end (Playwright)** checks that the app boots, that middleware actually
 redirects, that pages render without console errors, and that the phone layout
 scrolls the document rather than a box. `/demo` is public, so most of this runs
 with no credentials at all.
@@ -206,7 +206,7 @@ E2E_CLERK_USER_EMAIL=e2e@yourdomain.test
 E2E_CLERK_USER_PASSWORD=…
 ```
 
-Create that user in Clerk and point it at a **seeded** Supabase project — not
+Create that user in Clerk and point it at a **seeded** Supabase project, not
 your own account, since one of those tests deletes a card.
 
 ### Conventions
@@ -214,7 +214,7 @@ your own account, since one of those tests deletes a card.
 - **Mutation-test anything important.** Break the code deliberately and confirm
   exactly the intended test fails. It has caught vacuous tests here more than
   once.
-- **Scope E2E assertions to the active panel** — see above.
+- **Scope E2E assertions to the active panel.** See above.
 - **Playwright runs two workers, not the CPU count.** The Next dev server
   compiles on demand and drops connections under more load, producing tests that
   pass alone and fail in the pack.
@@ -249,5 +249,5 @@ Full list: <https://plaid.com/docs/sandbox/test-credentials/>
 
 ## Dev log
 
-[DEVLOG.md](./DEVLOG.md) — a running log of what was built and decided each
+[DEVLOG.md](./DEVLOG.md) is a running log of what was built and decided each
 session.

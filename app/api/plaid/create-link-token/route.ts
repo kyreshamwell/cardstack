@@ -17,7 +17,7 @@
 //
 // Stays on supabaseAdmin deliberately. Its only query reads plaid_access_token
 // from connected_accounts, which is exactly the column the user-level Postgres
-// role must never see — so the .eq('user_id', …) below is the actual security
+// role must never see, so the .eq('user_id', …) below is the actual security
 // boundary here, not belt and braces as it is elsewhere.
 // See docs/migrations/001-rls-write-policies.sql.
 
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     const body = await request.json()
     connectionId = body?.connectionId
   } catch {
-    // no body — normal new-connection flow
+    // no body: normal new-connection flow
   }
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     country_codes: [CountryCode.Us],
     language: 'en',
     // Only send redirect_uri when running over HTTPS (Vercel).
-    // Plaid production rejects http:// — omitting it works fine for localhost.
+    // Plaid production rejects http://, and omitting it works for localhost.
     ...(isHttps && { redirect_uri: `${appUrl}/dashboard` }),
   }
 
@@ -88,7 +88,7 @@ export async function POST(request: Request) {
   } catch (err: unknown) {
     // The detail goes to the log, not to the browser. This route used to return
     // Plaid's own error_message straight through, which is the one place in the
-    // app that leaked upstream error text — it can name the institution and
+    // app that leaked upstream error text. It can name the institution and
     // echo request specifics, and the client can't act on any of it.
     if (err && typeof err === 'object' && 'response' in err) {
       const axiosErr = err as { response?: { data?: unknown } }

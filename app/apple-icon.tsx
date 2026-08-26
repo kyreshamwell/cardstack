@@ -1,10 +1,10 @@
-// app/apple-icon.tsx — the iOS home-screen icon.
+// app/apple-icon.tsx: the iOS home-screen icon.
 //
 // Generated as a real PNG at build time via next/og. iOS needs a PNG for
 // apple-touch-icon; without one it falls back to a screenshot of the page,
 // which looks broken on the home screen.
 //
-// This is the logo's inner mark — circle plus CS — without the starburst rays.
+// This is the logo's inner mark (circle plus CS) without the starburst rays.
 // At the size iOS actually renders (roughly 60pt), the rays collapse into noise,
 // so the icon drops them deliberately rather than shrinking the full logo.
 

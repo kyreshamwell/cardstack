@@ -3,8 +3,8 @@
 //
 // Everything in the demo that would write to a real account.
 //
-// The buttons render exactly as they do in the app — same size, same position,
-// same icons — because a toolbar with holes in it stops looking like the
+// The buttons render exactly as they do in the app (same size, same position,
+// same icons) because a toolbar with holes in it stops looking like the
 // product. What changes is only what happens on click: instead of opening
 // Plaid or deleting a row, they raise one shared prompt.
 //
@@ -37,7 +37,7 @@ export function DemoGate({ children }: { children: ReactNode }) {
   // transformed ancestor becomes the containing block for `position: fixed`
   // descendants. Left in place, the overlay laid itself out inside the
   // dashboard grid instead of the viewport and got clipped by the shell's
-  // `overflow-hidden` — the prompt was visible but nothing in it could be
+  // `overflow-hidden`. The prompt was visible but nothing in it could be
   // clicked, so neither "Keep exploring" nor the backdrop would dismiss it.
   //
   // Mounted-only because document doesn't exist during the server render.
@@ -45,8 +45,8 @@ export function DemoGate({ children }: { children: ReactNode }) {
   useEffect(() => setMounted(true), [])
 
   // Enter-only, with no AnimatePresence. Wrapping this in one left the overlay
-  // pinned at its initial opacity of 0 and stopped it unmounting on dismiss —
-  // the prompt was in the DOM, invisible, and swallowing nothing, so both
+  // pinned at its initial opacity of 0 and stopped it unmounting on dismiss.
+  // The prompt was in the DOM, invisible, and swallowing nothing, so both
   // "Keep exploring" and the backdrop appeared dead. A modal that vanishes on
   // click instead of fading is a fair trade for one that reliably vanishes.
   const prompt = blocked ? (
@@ -74,7 +74,7 @@ export function DemoGate({ children }: { children: ReactNode }) {
               </p>
               <p className="mt-2 text-sm text-ink-2 leading-relaxed">
                 {blocked} works on your own cards, not the sample data. Everything
-                else here is live — expand a card, click the chart, hide the
+                else here is live: expand a card, click the chart, hide the
                 balances.
               </p>
               <div className="mt-5 flex items-center gap-2">
